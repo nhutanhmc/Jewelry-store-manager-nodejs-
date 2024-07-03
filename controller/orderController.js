@@ -3,7 +3,6 @@ const OrderDetail = require('../model/orderDetailModel');
 const Customer = require('../model/customerModel');
 const Store = require('../model/storeModel');
 const Product = require('../model/productModel');
-const { calculateOrderTotal } = require('./orderUtils');
 
 class OrderController {
     // Tạo đơn hàng
@@ -21,7 +20,6 @@ class OrderController {
                     order.orderDetails.push(newOrderDetail._id);
                 }
                 await order.save();
-                await calculateOrderTotal(order._id); // Tính toán tổng giá đơn hàng
             }
 
             // Thêm order vào mảng orders của customer
@@ -82,33 +80,32 @@ class OrderController {
         }
     }
 
-    // Cập nhật đơn hàng
     async updateOrder(req, res) {
         try {
             const { status, description, cashPaid, bankPaid } = req.body;
             const orderId = req.params.orderId;
-
+    
             const order = await Order.findById(orderId).populate('orderDetails');
-
+    
             if (!order) {
                 return res.status(404).json({ message: "Order not found" });
             }
-
+    
             // Kiểm tra trạng thái đơn hàng
             if (order.status !== 'pending' && order.status !== 'not enough') {
                 return res.status(400).json({ message: "Đơn đã xử lý" });
             }
-
+    
             // Kiểm tra và cập nhật tiền đã trả
             if (cashPaid || bankPaid) {
                 // Nếu status không phải là 'paid', trả về lỗi
                 if (status !== 'paid') {
                     return res.status(400).json({ message: "Invalid status for payment update" });
                 }
-
+    
                 order.cashPaid += cashPaid || 0;
                 order.bankPaid += bankPaid || 0;
-
+    
                 // Tính toán lại số tiền còn lại và dư thừa
                 const totalPaid = order.cashPaid + order.bankPaid;
                 order.remainingAmount = Math.max(0, order.totalPrice - totalPaid); // Đảm bảo remainingAmount không âm
@@ -125,7 +122,7 @@ class OrderController {
                         );
                     }
                 }
-
+    
                 // Nếu status là 'not enough', cập nhật lại status nếu đã thanh toán đủ
                 if (order.status === 'not enough' && order.remainingAmount <= 0) {
                     order.status = 'paid';
@@ -134,46 +131,46 @@ class OrderController {
                 // Cập nhật trạng thái khác (nếu có)
                 order.status = status;
             }
-
+    
             if (description) {
                 order.description = description;
             }
-
+    
             await order.save();
             return res.status(200).json({ message: "Order updated", order });
-
+    
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: err.message });
         }
     }
     
-    
 
+    // Xóa đơn hàng
     async deleteOrder(req, res) {
         try {
             const orderId = req.params.orderId;
             console.log("Deleting order with ID:", orderId);
-    
+
             // Tìm và xóa đơn hàng
             const order = await Order.findByIdAndDelete(orderId);
             if (!order) {
                 return res.status(404).json({ message: 'Order not found' });
             }
-    
+
             // Xóa tất cả OrderDetail liên quan
             await OrderDetail.deleteMany({ orderID: orderId });
-    
+
             // Xóa ID đơn hàng trong mảng orders của Customer
             if (order.customerID) {
                 await Customer.findByIdAndUpdate(order.customerID, { $pull: { orders: orderId } });
             }
-    
+
             // Xóa ID đơn hàng trong mảng orders của Store
             if (order.storeID) {
                 await Store.findByIdAndUpdate(order.storeID, { $pull: { orders: orderId } });
             }
-    
+
             return res.status(200).json({ message: 'Order deleted' });
         } catch (err) {
             console.error(err);
@@ -181,6 +178,7 @@ class OrderController {
         }
     }
 
+    // Tìm kiếm đơn hàng theo tên khách hàng
     async searchOrdersByCustomerName(req, res) {
         try {
             const customerName = req.query.name; // Lấy tên khách hàng từ query string
@@ -209,7 +207,6 @@ class OrderController {
             return res.status(500).json({ message: err.message });
         }
     }
-    
 }
 
 const orderController = new OrderController();

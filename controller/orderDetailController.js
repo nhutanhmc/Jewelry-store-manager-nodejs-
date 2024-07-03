@@ -1,10 +1,8 @@
 const OrderDetail = require('../model/orderDetailModel');
-const Product = require('../model/productModel');
 const Order = require('../model/orderModel');
-const { calculateOrderTotal } = require('./orderUtils'); // Import từ orderUtils.js
+const Product = require('../model/productModel');
 
 class OrderDetailController {
-
     // Tạo chi tiết đơn hàng (Thêm sản phẩm vào đơn hàng)
     async createOrderDetail(req, res) {
         try {
@@ -17,32 +15,52 @@ class OrderDetailController {
                 return res.status(404).json({ message: "Product or Order not found" });
             }
 
-            // Tạo chi tiết đơn hàng
-            const orderDetail = await OrderDetail.create({
-                productID,
-                quantity,
-                orderID
-            });
+            // Kiểm tra số lượng sản phẩm có đủ không
+            if (product.quantity < quantity) {
+                return res.status(400).json({ message: "Product quantity is not enough" });
+            }
 
-            // Cập nhật mảng orderDetails trong Order
-            order.orderDetails.push(orderDetail._id);
-            await order.save();
+            // Tìm OrderDetail đã tồn tại với productID và orderID
+            let orderDetail = await OrderDetail.findOne({ productID, orderID });
 
-            // Cập nhật tổng giá của đơn hàng (tính toán lại)
-            await calculateOrderTotal(orderID); // Sử dụng hàm từ orderUtils.js
+            if (orderDetail) {
+                // Nếu đã tồn tại, chỉ cập nhật số lượng
+                orderDetail.quantity = quantity;
+                orderDetail.totalPrice = product.price * orderDetail.quantity; // Cập nhật lại totalPrice
+            } else {
+                // Nếu chưa tồn tại, tạo mới OrderDetail
+                const totalPrice = product.price * quantity;
+                orderDetail = await OrderDetail.create({ productID, quantity, orderID, totalPrice });
+                
+                // Thêm orderDetail._id vào mảng orderDetails của Order
+                order.orderDetails.push(orderDetail._id); 
+                await order.save();
+            }
 
-            return res.status(201).json({ message: "OrderDetail created", orderDetail });
+            // Lưu OrderDetail đã cập nhật hoặc tạo mới
+            await orderDetail.save();
+
+            return res.status(201).json({ message: "OrderDetail updated or created", orderDetail });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ message: err.message });
+        }
+    }
+    // Lấy tất cả chi tiết đơn hàng
+    async getAllOrderDetails(req, res) {
+        try {
+            const orderDetails = await OrderDetail.find().populate('productID').populate('orderID');
+            return res.status(200).json({ orderDetails });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: err.message });
         }
     }
 
-    // Đọc chi tiết đơn hàng (Lấy thông tin về sản phẩm trong đơn hàng)
-    async getOrderDetail(req, res) {
+    // Lấy chi tiết đơn hàng theo ID
+    async getOrderDetailById(req, res) {
         try {
-            const orderDetail = await OrderDetail.findById(req.params.orderDetailId)
-                .populate('productID'); // Populate thông tin sản phẩm
+            const orderDetail = await OrderDetail.findById(req.params.orderDetailId).populate('productID').populate('orderID');
             if (!orderDetail) {
                 return res.status(404).json({ message: "OrderDetail not found" });
             }
@@ -53,32 +71,40 @@ class OrderDetailController {
         }
     }
 
-    // Lấy tất cả chi tiết đơn hàng
-    async getAllOrderDetails(req, res) {
-        try {
-            const orderDetails = await OrderDetail.find().populate('productID');
-            return res.status(200).json({ orderDetails });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ message: err.message });
-        }
-    }
-
-    // Cập nhật chi tiết đơn hàng (Thay đổi số lượng sản phẩm trong đơn hàng)
+    // Cập nhật chi tiết đơn hàng
     async updateOrderDetail(req, res) {
         try {
-            const { quantity } = req.body;
-            const orderDetail = await OrderDetail.findByIdAndUpdate(
-                req.params.orderDetailId,
-                { quantity },
-                { new: true }
-            );
+            const { productID, quantity } = req.body;
+            const orderDetailId = req.params.orderDetailId;
+
+            const orderDetail = await OrderDetail.findById(orderDetailId);
+
             if (!orderDetail) {
                 return res.status(404).json({ message: "OrderDetail not found" });
             }
 
-            // Cập nhật tổng giá của đơn hàng (tính toán lại)
-            await calculateOrderTotal(orderDetail.orderID);
+            // Cập nhật thông tin chi tiết đơn hàng
+            if (productID) {
+                const product = await Product.findById(productID);
+                if (!product) {
+                    return res.status(404).json({ message: "Product not found" });
+                }
+                orderDetail.productID = productID;
+                // Cập nhật lại totalPrice nếu có thay đổi sản phẩm
+                orderDetail.totalPrice = product.price * (quantity || orderDetail.quantity);
+            }
+            if (quantity) {
+                orderDetail.quantity = quantity;
+                // Cập nhật lại totalPrice nếu có thay đổi số lượng
+                orderDetail.totalPrice = orderDetail.totalPrice || orderDetail.productID.price * quantity;
+            }
+
+            await orderDetail.save();
+
+            // Tính toán lại totalPrice của Order
+            const order = await Order.findById(orderDetail.orderID).populate('orderDetails');
+            order.totalPrice = order.orderDetails.reduce((total, detail) => total + detail.totalPrice, 0);
+            await order.save();
 
             return res.status(200).json({ message: "OrderDetail updated", orderDetail });
         } catch (err) {
@@ -87,21 +113,25 @@ class OrderDetailController {
         }
     }
 
-    // Xóa chi tiết đơn hàng (Loại bỏ sản phẩm khỏi đơn hàng)
+    // Xóa chi tiết đơn hàng
     async deleteOrderDetail(req, res) {
         try {
-            const orderDetail = await OrderDetail.findByIdAndDelete(req.params.orderDetailId);
+            const orderDetailId = req.params.orderDetailId;
+
+            // Tìm và xóa chi tiết đơn hàng
+            const orderDetail = await OrderDetail.findByIdAndDelete(orderDetailId);
             if (!orderDetail) {
-                return res.status(404).json({ message: "OrderDetail not found" });
+                return res.status(404).json({ message: 'OrderDetail not found' });
             }
 
             // Cập nhật mảng orderDetails trong Order
-            await Order.findByIdAndUpdate(orderDetail.orderID, { $pull: { orderDetails: orderDetail._id } });
+            const order = await Order.findById(orderDetail.orderID);
+            if (order) {
+                order.orderDetails.pull(orderDetailId);
+                await order.save();
+            }
 
-            // Cập nhật tổng giá của đơn hàng (tính toán lại)
-            await calculateOrderTotal(orderDetail.orderID);
-
-            return res.status(200).json({ message: "OrderDetail deleted" });
+            return res.status(200).json({ message: 'OrderDetail deleted' });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: err.message });
@@ -109,12 +139,11 @@ class OrderDetailController {
     }
 }
 
-const orderDetailController = new OrderDetailController(); 
-
-module.exports = { 
-    createOrderDetail: orderDetailController.createOrderDetail.bind(orderDetailController), 
-    getOrderDetail: orderDetailController.getOrderDetail.bind(orderDetailController),
-    getAllOrderDetails: orderDetailController.getAllOrderDetails.bind(orderDetailController), // Thêm phương thức mới
+const orderDetailController = new OrderDetailController();
+module.exports = {
+    createOrderDetail: orderDetailController.createOrderDetail.bind(orderDetailController),
+    getAllOrderDetails: orderDetailController.getAllOrderDetails.bind(orderDetailController),
+    getOrderDetailById: orderDetailController.getOrderDetailById.bind(orderDetailController),
     updateOrderDetail: orderDetailController.updateOrderDetail.bind(orderDetailController),
-    deleteOrderDetail: orderDetailController.deleteOrderDetail.bind(orderDetailController),
+    deleteOrderDetail: orderDetailController.deleteOrderDetail.bind(orderDetailController)
 };

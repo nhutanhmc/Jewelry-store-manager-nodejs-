@@ -21,5 +21,4 @@ const OrderSchema = new Schema({
     excessAmount: { type: Number, default: 0 }
 });
 
-const Order = mongoose.model("Order", OrderSchema);
-module.exports = Order;
+module.exports = mongoose.model("Order", OrderSchema);
