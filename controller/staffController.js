@@ -50,8 +50,8 @@ class staffController {
       res.clearCookie("token");
       const { accessToken, refreshToken } = this.generateTokens(user);
       const frontendURL = process.env.NODE_ENV === 'production'
-        ? 'http://localhost:3000/auth/sign-in'
-        : 'http://localhost:3000/auth/sign-in'; // URL của frontend
+        ? 'http://localhost:3000/authGoogle'
+        : 'http://localhost:3000/authGoogle'; // URL của frontend
 
       // Chuyển hướng người dùng trở lại frontend với token qua query
       res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}`);
