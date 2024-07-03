@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Staff = require("../model/staffModel");
 const admin = require('../config/firebaseAdmin');
+
 class staffController {
   constructor() {
     this.generateTokens = this.generateTokens.bind(this);
@@ -41,20 +42,24 @@ class staffController {
       return res.json({ success: false, message: err.message || "Lỗi" });
     }
   }
-  
+
   async googleAuthCallback(req, res) {
     try {
       const user = req.user;
       // Xoá access token cũ
       res.clearCookie("token");
       const { accessToken, refreshToken } = this.generateTokens(user);
-      res.cookie('token', accessToken);
-      return res.json({ success: true, message: "Đăng nhập thành công!", accessToken, refreshToken, role: user.role });
+      const frontendURL = process.env.NODE_ENV === 'production'
+        ? 'http://localhost:3000/auth/sign-in'
+        : 'http://localhost:3000/auth/sign-in'; // URL của frontend
+
+      // Chuyển hướng người dùng trở lại frontend với token qua query
+      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}`);
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Google' });
     }
   }
-  
+
   async refreshAccessToken(req, res) {
     try {
       const { refreshToken } = req.body;

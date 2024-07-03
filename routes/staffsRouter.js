@@ -6,11 +6,10 @@ const passport = require("../config/passportConfig"); // Nhớ require passport
 router.post('/refresh-token', staffController.refreshAccessToken);
 
 // Khởi tạo quá trình xác thực Google
-// Khởi tạo quá trình xác thực Google
 router.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// Callback sau khi xác thực (Đã loại bỏ failureRedirect)
+// Callback sau khi xác thực
 router.get('/auth/google/callback', 
   passport.authenticate('google'), 
   staffController.googleAuthCallback);
