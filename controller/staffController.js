@@ -54,7 +54,7 @@ class staffController {
         : 'http://localhost:3000/authGoogle'; // URL của frontend
 
       // Chuyển hướng người dùng trở lại frontend với token qua query
-      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}`);
+      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}`);
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Google' });
     }
