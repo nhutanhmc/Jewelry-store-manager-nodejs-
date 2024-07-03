@@ -5,7 +5,7 @@ class CustomerController {
     async createCustomer(req, res) {
         try {
             const { name, age, phone, address } = req.body;
-            const customer = await Customer.create({ name, age, phone, address });
+            const customer = await Customer.create({ name, age, phone, address, status: 'inactive' });
             res.status(201).json(customer);
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -61,6 +61,23 @@ class CustomerController {
                 return res.status(404).json({ message: 'Customer not found' });
             }
             res.status(200).json({ message: 'Customer deleted' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // Kích hoạt trạng thái khách hàng
+    async activateCustomer(req, res) {
+        try {
+            const customer = await Customer.findByIdAndUpdate(
+                req.params.id,
+                { status: 'active' },
+                { new: true }
+            );
+            if (!customer) {
+                return res.status(404).json({ message: 'Customer not found' });
+            }
+            res.status(200).json({ message: 'Customer activated', customer });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }

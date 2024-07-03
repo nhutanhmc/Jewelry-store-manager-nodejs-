@@ -1,19 +1,20 @@
 const Material = require("../model/materialModel");
+const ProcessingFee = require("../model/processingFeeModel");
 
 class materialController {
   getMaterialsList_Api(req, res, next) {
     try {
-      return new Promise((resolve, reject) => {
-        Material.find({}).then((materials) => {
+      Material.find({}).populate('processingFeeId')
+        .then((materials) => {
           if (materials.length > 0) {
-            return resolve(res.status(200).json({ success: true, materials }));
+            return res.status(200).json({ success: true, materials });
           } else {
-            return resolve(res.status(200).json({ success: false, message: "Không có material nào!" }));
+            return res.status(200).json({ success: false, message: "Không có material nào!" });
           }
+        })
+        .catch((err) => {
+          return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
         });
-      }).catch((err) => {
-        return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
-      });
     } catch (err) {
       return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
     }
@@ -21,7 +22,7 @@ class materialController {
 
   getMaterialById_Api(req, res, next) {
     try {
-      Material.findById({ _id: req.params.id })
+      Material.findById({ _id: req.params.id }).populate('processingFeeId')
         .then((material) => {
           if (material) {
             return res.status(200).json({ success: true, material });
@@ -40,25 +41,37 @@ class materialController {
   createMaterial_Api(req, res, next) {
     try {
       let newName = req.body.name?.trim();
-      let newWeight = req.body.weight;
-      let newSize = req.body.size?.trim();
+      let newProcessingFeeId = req.body.processingFeeId;
+      let newPricePerGram = req.body.pricePerGram;
+
       if (!newName || newName === "") {
         return res.json({ success: false, message: "Vui lòng nhập name để tạo mới" });
       }
-      if (!newWeight || newWeight === "") {
-        return res.json({ success: false, message: "Vui lòng nhập weight để tạo mới" });
+      if (!newProcessingFeeId) {
+        return res.json({ success: false, message: "Vui lòng nhập processingFeeId để tạo mới" });
       }
-      if (!newSize || newSize === "") {
-        return res.json({ success: false, message: "Vui lòng nhập size để tạo mới" });
+      if (!newPricePerGram || newPricePerGram === "") {
+        return res.json({ success: false, message: "Vui lòng nhập pricePerGram để tạo mới" });
       }
-      Material.findOne({ name: newName })
-        .then((materials) => {
-          if (materials) {
-            return res.json({ success: false, message: "Material này đã tồn tại. Vui lòng nhập name khác!" });
+
+      ProcessingFee.findById(newProcessingFeeId)
+        .then((fee) => {
+          if (!fee) {
+            return res.json({ success: false, message: "processingFeeId không tồn tại!" });
           }
-          Material.create({ name: newName, weight: newWeight, size: newSize })
-            .then((result) => {
-              return res.status(201).json({ success: true, result });
+
+          Material.findOne({ name: newName })
+            .then((material) => {
+              if (material) {
+                return res.json({ success: false, message: "Material này đã tồn tại. Vui lòng nhập name khác!" });
+              }
+              Material.create({ name: newName, processingFeeId: newProcessingFeeId, pricePerGram: newPricePerGram })
+                .then((result) => {
+                  return res.status(201).json({ success: true, result });
+                })
+                .catch((err) => {
+                  return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
+                });
             })
             .catch((err) => {
               return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
@@ -75,8 +88,8 @@ class materialController {
   deleteMaterialById_Api(req, res, next) {
     try {
       Material.findById({ _id: req.params.id })
-        .then((materials) => {
-          if (!materials) {
+        .then((material) => {
+          if (!material) {
             return res.json({ success: false, message: "Material không tồn tại!" });
           }
           Material.deleteOne({ _id: req.params.id })
@@ -102,23 +115,39 @@ class materialController {
   updateMaterialById_Api(req, res, next) {
     try {
       let updateName = req.body.name?.trim();
-      let updateWeight = req.body.weight;
-      let updateSize = req.body.size?.trim();
+      let updateProcessingFeeId = req.body.processingFeeId;
+      let updatePricePerGram = req.body.pricePerGram;
+
       if (!updateName) {
         return res.json({ success: false, message: "Vui lòng không để trống name!" });
       }
-      if (!updateWeight) {
-        return res.json({ success: false, message: "Vui lòng không để trống weight!" });
+      if (!updateProcessingFeeId) {
+        return res.json({ success: false, message: "Vui lòng không để trống processingFeeId!" });
       }
-      if (!updateSize) {
-        return res.json({ success: false, message: "Vui lòng không để trống size!" });
+      if (!updatePricePerGram) {
+        return res.json({ success: false, message: "Vui lòng không để trống pricePerGram!" });
       }
-      Material.findByIdAndUpdate(req.params.id, { name: updateName, weight: updateWeight, size: updateSize }, { new: true })
-        .then((material) => {
-          if (!material) {
-            return res.json({ success: false, message: "Material không tồn tại!" });
+
+      ProcessingFee.findById(updateProcessingFeeId)
+        .then((fee) => {
+          if (!fee) {
+            return res.json({ success: false, message: "processingFeeId không tồn tại!" });
           }
-          return res.json({ success: true, material });
+
+          Material.findByIdAndUpdate(
+            req.params.id,
+            { name: updateName, processingFeeId: updateProcessingFeeId, pricePerGram: updatePricePerGram },
+            { new: true }
+          )
+            .then((material) => {
+              if (!material) {
+                return res.json({ success: false, message: "Material không tồn tại!" });
+              }
+              return res.json({ success: true, material });
+            })
+            .catch((err) => {
+              return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
+            });
         })
         .catch((err) => {
           return res.status(err.status || 500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });

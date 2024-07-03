@@ -27,10 +27,12 @@ class OrderDetailController {
                 // Nếu đã tồn tại, chỉ cập nhật số lượng
                 orderDetail.quantity = quantity;
                 orderDetail.totalPrice = product.price * orderDetail.quantity; // Cập nhật lại totalPrice
+                orderDetail.totalProfit = product.profit * orderDetail.quantity; // Cập nhật lại totalProfit
             } else {
                 // Nếu chưa tồn tại, tạo mới OrderDetail
                 const totalPrice = product.price * quantity;
-                orderDetail = await OrderDetail.create({ productID, quantity, orderID, totalPrice });
+                const totalProfit = product.profit * quantity;
+                orderDetail = await OrderDetail.create({ productID, quantity, orderID, totalPrice, totalProfit });
                 
                 // Thêm orderDetail._id vào mảng orderDetails của Order
                 order.orderDetails.push(orderDetail._id); 
@@ -40,12 +42,18 @@ class OrderDetailController {
             // Lưu OrderDetail đã cập nhật hoặc tạo mới
             await orderDetail.save();
 
+            // Cập nhật totalProfit của Order
+            const orderDetails = await OrderDetail.find({ orderID: order._id });
+            order.totalProfit = orderDetails.reduce((total, detail) => total + detail.totalProfit, 0);
+            await order.save();
+
             return res.status(201).json({ message: "OrderDetail updated or created", orderDetail });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: err.message });
         }
     }
+
     // Lấy tất cả chi tiết đơn hàng
     async getAllOrderDetails(req, res) {
         try {
@@ -90,20 +98,23 @@ class OrderDetailController {
                     return res.status(404).json({ message: "Product not found" });
                 }
                 orderDetail.productID = productID;
-                // Cập nhật lại totalPrice nếu có thay đổi sản phẩm
+                // Cập nhật lại totalPrice và totalProfit nếu có thay đổi sản phẩm
                 orderDetail.totalPrice = product.price * (quantity || orderDetail.quantity);
+                orderDetail.totalProfit = product.profit * (quantity || orderDetail.quantity);
             }
             if (quantity) {
                 orderDetail.quantity = quantity;
-                // Cập nhật lại totalPrice nếu có thay đổi số lượng
-                orderDetail.totalPrice = orderDetail.totalPrice || orderDetail.productID.price * quantity;
+                // Cập nhật lại totalPrice và totalProfit nếu có thay đổi số lượng
+                orderDetail.totalPrice = orderDetail.productID.price * quantity;
+                orderDetail.totalProfit = orderDetail.productID.profit * quantity;
             }
 
             await orderDetail.save();
 
-            // Tính toán lại totalPrice của Order
+            // Tính toán lại totalPrice và totalProfit của Order
             const order = await Order.findById(orderDetail.orderID).populate('orderDetails');
             order.totalPrice = order.orderDetails.reduce((total, detail) => total + detail.totalPrice, 0);
+            order.totalProfit = order.orderDetails.reduce((total, detail) => total + detail.totalProfit, 0);
             await order.save();
 
             return res.status(200).json({ message: "OrderDetail updated", orderDetail });
@@ -128,6 +139,11 @@ class OrderDetailController {
             const order = await Order.findById(orderDetail.orderID);
             if (order) {
                 order.orderDetails.pull(orderDetailId);
+                await order.save();
+
+                // Tính toán lại totalProfit của Order
+                const orderDetails = await OrderDetail.find({ orderID: order._id });
+                order.totalProfit = orderDetails.reduce((total, detail) => total + detail.totalProfit, 0);
                 await order.save();
             }
 

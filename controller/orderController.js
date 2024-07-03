@@ -22,6 +22,11 @@ class OrderController {
                 await order.save();
             }
 
+            // Tính toán lại tổng lợi nhuận
+            const updatedOrderDetails = await OrderDetail.find({ orderID: order._id });
+            order.totalProfit = updatedOrderDetails.reduce((total, detail) => total + detail.totalProfit, 0);
+            await order.save();
+
             // Thêm order vào mảng orders của customer
             await Customer.findByIdAndUpdate(
                 customerID,
@@ -84,28 +89,28 @@ class OrderController {
         try {
             const { status, description, cashPaid, bankPaid } = req.body;
             const orderId = req.params.orderId;
-    
+
             const order = await Order.findById(orderId).populate('orderDetails');
-    
+
             if (!order) {
                 return res.status(404).json({ message: "Order not found" });
             }
-    
+
             // Kiểm tra trạng thái đơn hàng
             if (order.status !== 'pending' && order.status !== 'not enough') {
                 return res.status(400).json({ message: "Đơn đã xử lý" });
             }
-    
+
             // Kiểm tra và cập nhật tiền đã trả
             if (cashPaid || bankPaid) {
                 // Nếu status không phải là 'paid', trả về lỗi
                 if (status !== 'paid') {
                     return res.status(400).json({ message: "Invalid status for payment update" });
                 }
-    
+
                 order.cashPaid += cashPaid || 0;
                 order.bankPaid += bankPaid || 0;
-    
+
                 // Tính toán lại số tiền còn lại và dư thừa
                 const totalPaid = order.cashPaid + order.bankPaid;
                 order.remainingAmount = Math.max(0, order.totalPrice - totalPaid); // Đảm bảo remainingAmount không âm
@@ -122,7 +127,7 @@ class OrderController {
                         );
                     }
                 }
-    
+
                 // Nếu status là 'not enough', cập nhật lại status nếu đã thanh toán đủ
                 if (order.status === 'not enough' && order.remainingAmount <= 0) {
                     order.status = 'paid';
@@ -131,20 +136,19 @@ class OrderController {
                 // Cập nhật trạng thái khác (nếu có)
                 order.status = status;
             }
-    
+
             if (description) {
                 order.description = description;
             }
-    
+
             await order.save();
             return res.status(200).json({ message: "Order updated", order });
-    
+
         } catch (err) {
             console.error(err);
             return res.status(500).json({ message: err.message });
         }
     }
-    
 
     // Xóa đơn hàng
     async deleteOrder(req, res) {

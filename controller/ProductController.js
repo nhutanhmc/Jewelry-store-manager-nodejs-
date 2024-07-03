@@ -2,27 +2,32 @@ const cloudinary = require("../config/cloudinaryConfig");
 const Product = require('../model/productModel');
 const Material = require('../model/materialModel');
 const Gemstone = require('../model/gemstoneModel');
+const ProcessingFee = require('../model/processingFeeModel');
 const ProductType = require('../model/productTypeModel');
 const Image = require('../model/imageModel');
 
 class ProductController {
     async uploadImage_Api(req, res) {
         try {
-            const { name, size, weight, description, price, color, materialID, gemstoneID, productTypeID, quantity } = req.body;
+            const { name, size, weight, description, color, materialID, gemstoneID, productTypeID, quantity, materialWeight } = req.body;
 
             // Kiểm tra các ID liên quan
-            if (!await Material.findById(materialID)) {
+            const material = await Material.findById(materialID);
+            if (!material) {
                 return res.status(400).json({
                     success: false,
                     message: "Material không tồn tại!"
                 });
             }
-            if (!await Gemstone.findById(gemstoneID)) {
+
+            const gemstone = await Gemstone.findById(gemstoneID);
+            if (!gemstone) {
                 return res.status(400).json({
                     success: false,
                     message: "Gemstone không tồn tại!"
                 });
             }
+
             if (!await ProductType.findById(productTypeID)) {
                 return res.status(400).json({
                     success: false,
@@ -37,9 +42,26 @@ class ProductController {
                 });
             }
 
+            // Tính toán giá gốc của sản phẩm
+            const materialFee = await ProcessingFee.findById(material.processingFeeId);
+            const gemstoneFee = await ProcessingFee.findById(gemstone.processingFeeId);
+            const basePrice = (gemstone.priceOfGem * (1 + gemstoneFee.feeRate)) + ((material.pricePerGram * materialWeight) * (1 + materialFee.feeRate));
+
+            // Tính toán giá cuối cùng và tiền lời
+            let price;
+            let profit;
+            if (basePrice < 5000000) {
+                price = basePrice * 1.2;
+            } else if (basePrice >= 5000000 && basePrice < 20000000) {
+                price = basePrice * 1.35;
+            } else {
+                price = basePrice * 1.45;
+            }
+            profit = price - basePrice;
+
             // Create new product
             const newProduct = await Product.create({
-                name, size, weight, description, price, color, materialID, gemstoneID, productTypeID, quantity
+                name, size, weight, description, basePrice, price, profit, color, materialID, gemstoneID, productTypeID, quantity, materialWeight
             });
 
             // Upload images to Cloudinary and save references
@@ -159,34 +181,52 @@ class ProductController {
 
     async updateProduct_Api(req, res) {
         try {
-            const { name, size, weight, description, price, color, materialID, gemstoneID, productTypeID, quantity } = req.body;
+            const { name, size, weight, description, color, materialID, gemstoneID, productTypeID, quantity, materialWeight } = req.body;
     
-            if (materialID && !await Material.findById(materialID)) {
+            const material = await Material.findById(materialID);
+            if (materialID && !material) {
                 return res.status(400).json({
                     success: false,
                     message: "Material không tồn tại!"
                 });
             }
-            if (gemstoneID && !await Gemstone.findById(gemstoneID)) {
+
+            const gemstone = await Gemstone.findById(gemstoneID);
+            if (gemstoneID && !gemstone) {
                 return res.status(400).json({
                     success: false,
                     message: "Gemstone không tồn tại!"
                 });
             }
+
             if (productTypeID && !await ProductType.findById(productTypeID)) {
                 return res.status(400).json({
                     success: false,
                     message: "ProductType không tồn tại!"
                 });
             }
-    
-            const productType = await ProductType.findById(productTypeID);
-            const category = await Category.findById(productType.categoryID);
-    
+
+            // Tính toán giá gốc của sản phẩm
+            const materialFee = await ProcessingFee.findById(material.processingFeeId);
+            const gemstoneFee = await ProcessingFee.findById(gemstone.processingFeeId);
+            const basePrice = (gemstone.priceOfGem * (1 + gemstoneFee.feeRate)) + ((material.pricePerGram * materialWeight) * (1 + materialFee.feeRate));
+
+            // Tính toán giá cuối cùng và tiền lời
+            let price;
+            let profit;
+            if (basePrice < 5000000) {
+                price = basePrice * 1.2;
+            } else if (basePrice >= 5000000 && basePrice < 20000000) {
+                price = basePrice * 1.35;
+            } else {
+                price = basePrice * 1.45;
+            }
+            profit = price - basePrice;
+
             const updatedProduct = await Product.findByIdAndUpdate(
                 req.params.id,
                 {
-                    name, size, weight, description, price, color, materialID, gemstoneID, productTypeID, categoryID: category._id, quantity
+                    name, size, weight, description, basePrice, price, profit, color, materialID, gemstoneID, productTypeID, quantity, materialWeight
                 },
                 { new: true }
             ).populate('materialID').populate('gemstoneID').populate('productTypeID').populate('categoryID');

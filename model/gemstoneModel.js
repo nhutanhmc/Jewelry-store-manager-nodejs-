@@ -4,8 +4,9 @@ const Schema = mongoose.Schema;
 const GemstoneSchema = new Schema(
   {
     name: { type: String, required: true },
-    weight: { type: Number, required: true },
-    size: { type: String, required: true }
+    size: { type: String, required: true },
+    processingFeeId: { type: Schema.Types.ObjectId, ref: 'ProcessingFee', required: true },
+    priceOfGem: { type: Number, required: true }
   },
   { timestamps: true }
 );

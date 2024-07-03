@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controller/customerController');
-const { authenticateToken } = require('../config/authWithJWT'); // Giả sử bạn đã có middleware xác thực
+const { authenticateToken } = require('../config/authWithJWT');
 
 // Middleware xác thực cho tất cả các route
 router.use(authenticateToken);
@@ -14,5 +14,7 @@ router.route('/:id')
     .get(customerController.getCustomerById)
     .put(customerController.updateCustomer)
     .delete(customerController.deleteCustomer);
+
+router.patch('/:id/activate', customerController.activateCustomer);
 
 module.exports = router;

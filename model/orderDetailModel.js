@@ -5,7 +5,8 @@ const OrderDetailSchema = new Schema({
     productID: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     quantity: { type: Number, required: true, min: 1 },
     orderID: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
-    totalPrice: { type: Number, required: true } // Thêm totalPrice vào OrderDetailSchema
+    totalPrice: { type: Number, required: true }, // Thêm totalPrice vào OrderDetailSchema
+    totalProfit: { type: Number, required: true } // Thêm totalProfit vào OrderDetailSchema
 });
 
 OrderDetailSchema.pre('save', async function(next) {
@@ -15,6 +16,7 @@ OrderDetailSchema.pre('save', async function(next) {
             throw new Error("Product not found");
         }
         this.totalPrice = product.price * this.quantity; // Tính toán tổng giá dựa trên giá sản phẩm và số lượng
+        this.totalProfit = product.profit * this.quantity; // Tính toán tổng lợi nhuận dựa trên lợi nhuận sản phẩm và số lượng
         next();
     } catch (err) {
         next(err);
@@ -30,10 +32,11 @@ OrderDetailSchema.post('save', async function(doc) {
         // Tính toán lại quantity từ các orderDetails
         const orderDetails = await mongoose.model('OrderDetail').find({ orderID: doc.orderID });
         order.quantity = orderDetails.reduce((total, detail) => total + detail.quantity, 0);
+        order.totalProfit = orderDetails.reduce((total, detail) => total + detail.totalProfit, 0); // Tính toán lại tổng lợi nhuận
         await order.save();
     } catch (err) {
         console.error(err);
-        throw new Error("Failed to update Order quantity");
+        throw new Error("Failed to update Order quantity and totalProfit");
     }
 });
 

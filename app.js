@@ -23,6 +23,7 @@ const paymentRouter = require('./routes/paymentRouter');
 const storeRouter = require('./routes/storeRouter');
 const orderRouter = require('./routes/orderRouter');
 const orderDetailRouter = require('./routes/orderDetailRouter');
+const processingFeeRouter = require('./routes/ProcessingFee');
 
 const swaggerUi = require("swagger-ui-express");
 const passport = require('./config/passportConfig');
@@ -87,6 +88,7 @@ app.use('/payments', paymentRouter);
 app.use('/stores', storeRouter);
 app.use('/orders', orderRouter);
 app.use('/orderDetails', orderDetailRouter);
+app.use('/processingFee', processingFeeRouter);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
