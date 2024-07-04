@@ -6,9 +6,9 @@ class CustomerController {
         try {
             const { name, age, phone, address } = req.body;
             const customer = await Customer.create({ name, age, phone, address, status: false }); // Sửa thành boolean
-            res.status(201).json(customer);
+            res.status(201).json({ success: true, customer });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -77,9 +77,9 @@ class CustomerController {
             if (!customer) {
                 return res.status(404).json({ message: 'Customer not found' });
             }
-            res.status(200).json({ message: 'Customer activated', customer });
+            res.status(200).json({ success: true, message: 'Customer activated', customer });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 }
