@@ -50,8 +50,8 @@ class OrderController {
     async getAllOrders(req, res) {
         try {
             const orders = await Order.find()
-                .populate('customerID')
-                .populate('storeID')
+                .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
+                .populate({ path: 'storeID', select: '-orders' })    // Loại bỏ trường orders từ store
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',
@@ -68,8 +68,8 @@ class OrderController {
     async getOrderById(req, res) {
         try {
             const order = await Order.findById(req.params.orderId)
-                .populate('customerID')
-                .populate('storeID')
+                .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
+                .populate({ path: 'storeID', select: '-orders' })    // Loại bỏ trường orders từ store
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',
@@ -197,8 +197,8 @@ class OrderController {
 
             // Tìm các đơn hàng có customerID thuộc danh sách customerIds
             const orders = await Order.find({ customerID: { $in: customerIds } })
-                .populate('customerID')
-                .populate('storeID')
+                .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
+                .populate({ path: 'storeID', select: '-orders' })    // Loại bỏ trường orders từ store
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',

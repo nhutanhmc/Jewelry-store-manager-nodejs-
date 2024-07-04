@@ -5,7 +5,7 @@ class CustomerController {
     async createCustomer(req, res) {
         try {
             const { name, age, phone, address } = req.body;
-            const customer = await Customer.create({ name, age, phone, address, status: 'inactive' });
+            const customer = await Customer.create({ name, age, phone, address, status: false }); // Sửa thành boolean
             res.status(201).json(customer);
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -71,7 +71,7 @@ class CustomerController {
         try {
             const customer = await Customer.findByIdAndUpdate(
                 req.params.id,
-                { status: 'active' },
+                { status: true }, // Sửa thành boolean
                 { new: true }
             );
             if (!customer) {
