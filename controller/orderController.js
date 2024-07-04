@@ -3,6 +3,7 @@ const OrderDetail = require('../model/orderDetailModel');
 const Customer = require('../model/customerModel');
 const Store = require('../model/storeModel');
 const Product = require('../model/productModel');
+const Image = require('../model/imageModel');
 
 class OrderController {
     // Tạo đơn hàng
@@ -39,10 +40,10 @@ class OrderController {
                 { $push: { orders: order._id } }
             );
 
-            return res.status(201).json({ message: "Order created", order });
+            return res.status(201).json({ success: true, message: "Order created", order });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ message: err.message });
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 
@@ -55,12 +56,19 @@ class OrderController {
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',
-                    populate: { path: 'productID' }
+                    populate: {
+                        path: 'productID',
+                        populate: {
+                            path: 'imageIDs',
+                            select: 'imageLink'
+                        }
+                    }
                 });
-            return res.status(200).json({ orders });
+
+            return res.status(200).json({ success: true, orders });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ message: err.message });
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 
@@ -73,49 +81,58 @@ class OrderController {
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',
-                    populate: { path: 'productID' }
+                    populate: {
+                        path: 'productID',
+                        populate: {
+                            path: 'imageIDs',
+                            select: 'imageLink'
+                        }
+                    }
                 });
+
             if (!order) {
-                return res.status(404).json({ message: "Order not found" });
+                return res.status(404).json({ success: false, message: "Order not found" });
             }
-            return res.status(200).json({ order });
+
+            return res.status(200).json({ success: true, order });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ message: err.message });
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 
+    // Cập nhật đơn hàng
     async updateOrder(req, res) {
         try {
             const { status, description, cashPaid, bankPaid } = req.body;
             const orderId = req.params.orderId;
-    
+
             const order = await Order.findById(orderId).populate('orderDetails');
-    
+
             if (!order) {
-                return res.status(404).json({ message: "Order not found" });
+                return res.status(404).json({ success: false, message: "Order not found" });
             }
-    
+
             // Kiểm tra trạng thái đơn hàng
             if (order.status !== 'pending' && order.status !== 'not enough' && order.status !== 'cancelled') {
-                return res.status(400).json({ message: "Đơn đã xử lý" });
+                return res.status(400).json({ success: false, message: "Đơn đã xử lý" });
             }
-    
+
             // Kiểm tra và cập nhật tiền đã trả
             if (cashPaid || bankPaid) {
                 // Nếu status không phải là 'paid', trả về lỗi
                 if (status !== 'paid') {
-                    return res.status(400).json({ message: "Invalid status for payment update" });
+                    return res.status(400).json({ success: false, message: "Invalid status for payment update" });
                 }
-    
+
                 order.cashPaid += cashPaid || 0;
                 order.bankPaid += bankPaid || 0;
-    
+
                 // Tính toán lại số tiền còn lại và dư thừa
                 const totalPaid = order.cashPaid + order.bankPaid;
                 order.remainingAmount = Math.max(0, order.totalPrice - totalPaid); // Đảm bảo remainingAmount không âm
                 order.excessAmount = Math.max(0, totalPaid - order.totalPrice); // Đảm bảo excessAmount không âm
-    
+
                 // Cập nhật trạng thái nếu đã thanh toán đủ
                 if (order.remainingAmount <= 0) {
                     order.status = 'paid';
@@ -129,7 +146,7 @@ class OrderController {
                 } else {
                     order.status = 'not enough';
                 }
-    
+
                 // Nếu status là 'not enough', cập nhật lại status nếu đã thanh toán đủ
                 if (order.status === 'not enough' && order.remainingAmount <= 0) {
                     order.status = 'paid';
@@ -142,20 +159,19 @@ class OrderController {
                     order.status = status;
                 }
             }
-    
+
             if (description) {
                 order.description = description;
             }
-    
+
             await order.save();
             return res.status(200).json({ success: true, message: "Order updated", order });
-    
-            } catch (err) {
-                console.error(err);
-                return res.status(500).json({ success: false, message: err.message });
-            }
+
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
         }
-    
+    }
 
     // Xóa đơn hàng
     async deleteOrder(req, res) {
@@ -166,7 +182,7 @@ class OrderController {
             // Tìm và xóa đơn hàng
             const order = await Order.findByIdAndDelete(orderId);
             if (!order) {
-                return res.status(404).json({ message: 'Order not found' });
+                return res.status(404).json({ success: false, message: 'Order not found' });
             }
 
             // Xóa tất cả OrderDetail liên quan
@@ -182,10 +198,10 @@ class OrderController {
                 await Store.findByIdAndUpdate(order.storeID, { $pull: { orders: orderId } });
             }
 
-            return res.status(200).json({ message: 'Order deleted' });
+            return res.status(200).json({ success: true, message: 'Order deleted' });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ message: err.message });
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 
@@ -209,13 +225,19 @@ class OrderController {
                 .populate('payments')
                 .populate({
                     path: 'orderDetails',
-                    populate: { path: 'productID' }
+                    populate: {
+                        path: 'productID',
+                        populate: {
+                            path: 'imageIDs',
+                            select: 'imageLink'
+                        }
+                    }
                 });
 
-            return res.status(200).json({ orders });
+            return res.status(200).json({ success: true, orders });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ message: err.message });
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 }

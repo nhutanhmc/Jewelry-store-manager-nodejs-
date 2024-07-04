@@ -51,6 +51,40 @@ router.post('/', upload.array('images'), ProductController.uploadImage_Api);
 
 /**
  * @swagger
+ * /products/{id}/images:
+ *   put:
+ *     summary: Update product images by ID
+ *     tags: [Product]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Product images updated successfully
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:id/images', upload.array('images'), ProductController.updateProductImages_Api);
+
+/**
+ * @swagger
  * /products:
  *   get:
  *     summary: Get all products
