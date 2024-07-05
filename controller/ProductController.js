@@ -229,7 +229,12 @@ class ProductController {
                     name, size, weight, description, basePrice, price, profit, color, materialID, gemstoneID, productTypeID, quantity, materialWeight
                 },
                 { new: true }
-            ).populate('materialID').populate('gemstoneID').populate('productTypeID').populate('categoryID');
+            ).populate('materialID').populate('gemstoneID').populate('productTypeID').populate({
+                path: 'productTypeID',
+                populate: {
+                    path: 'categoryID'
+                }
+            });
     
             if (!updatedProduct) {
                 return res.status(404).json({

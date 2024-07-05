@@ -5,14 +5,14 @@ const { authenticateToken } = require('../config/authWithJWT'); // Giả sử b�
 
 router.use(authenticateToken); // Sử dụng middleware xác thực cho tất cả các route
 
+router.get('/daily-profit', orderController.getDailyProfitAndQuantity);
+router.get('/search-by-customer', orderController.searchOrdersByCustomerName);
 router.route('/')
     .get(orderController.getAllOrders)
     .post(orderController.createOrder);
-router.get('/search-by-customer', orderController.searchOrdersByCustomerName);
 router.route('/:orderId')
     .get(orderController.getOrderById)
     .put(orderController.updateOrder)
     .delete(orderController.deleteOrder);
-
 
 module.exports = router;

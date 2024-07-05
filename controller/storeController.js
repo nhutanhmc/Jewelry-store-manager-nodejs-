@@ -6,9 +6,9 @@ class StoreController {
         try {
             const { name, phone, location } = req.body; // Bỏ trường currentQuantity
             const store = await Store.create({ name, phone, location });
-            res.status(201).json(store);
+            res.status(201).json({ success: true, store });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -16,9 +16,9 @@ class StoreController {
     async getAllStores(req, res) {
         try {
             const stores = await Store.find().populate('orders'); 
-            res.status(200).json(stores);
+            res.status(200).json({ success: true, stores });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -27,11 +27,11 @@ class StoreController {
         try {
             const store = await Store.findById(req.params.id).populate('orders');
             if (!store) {
-                return res.status(404).json({ message: 'Store not found' });
+                return res.status(404).json({ success: false, message: 'Store not found' });
             }
-            res.status(200).json(store);
+            res.status(200).json({ success: true, store });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -45,11 +45,11 @@ class StoreController {
                 { new: true }
             );
             if (!store) {
-                return res.status(404).json({ message: 'Store not found' });
+                return res.status(404).json({ success: false, message: 'Store not found' });
             }
-            res.status(200).json(store);
+            res.status(200).json({ success: true, store });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -58,11 +58,11 @@ class StoreController {
         try {
             const store = await Store.findByIdAndDelete(req.params.id);
             if (!store) {
-                return res.status(404).json({ message: 'Store not found' });
+                return res.status(404).json({ success: false, message: 'Store not found' });
             }
-            res.status(200).json({ message: 'Store deleted' });
+            res.status(200).json({ success: true, message: 'Store deleted' });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 }

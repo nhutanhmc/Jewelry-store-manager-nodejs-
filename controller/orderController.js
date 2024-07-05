@@ -114,7 +114,7 @@ class OrderController {
             }
 
             // Kiểm tra trạng thái đơn hàng
-            if (order.status !== 'pending' && order.status !== 'not enough' && order.status !== 'cancelled') {
+            if (order.status !== 'pending' && order.status !== 'not enough') {
                 return res.status(400).json({ success: false, message: "Đơn đã xử lý" });
             }
 
@@ -240,6 +240,63 @@ class OrderController {
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+
+    async getDailyProfitAndQuantity(req, res) {
+        try {
+            const { date } = req.query; // Nhận ngày từ query string
+    
+            // Kiểm tra nếu date không hợp lệ
+            if (!date) {
+                return res.status(400).json({ success: false, message: 'Date is required' });
+            }
+    
+            // Chuyển đổi ngày thành định dạng đầu ngày và cuối ngày
+            const startDate = new Date(date);
+            const endDate = new Date(date);
+    
+            if (isNaN(startDate.getTime())) {
+                return res.status(400).json({ success: false, message: 'Invalid date format' });
+            }
+    
+            startDate.setUTCHours(0, 0, 0, 0);
+            endDate.setUTCHours(23, 59, 59, 999);
+    
+            console.log("Start Date:", startDate.toISOString());
+            console.log("End Date:", endDate.toISOString());
+    
+            // Tìm tất cả các đơn hàng trong khoảng thời gian của ngày đó và có trạng thái là 'paid'
+            const orders = await Order.find({
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                },
+                status: 'paid'
+            }).populate('orderDetails');
+    
+            console.log("Orders found:", orders);
+    
+            // Kiểm tra nếu không có đơn hàng nào
+            if (orders.length === 0) {
+                return res.status(200).json({ success: true, date, totalProfit: 0, totalQuantity: 0 });
+            }
+    
+            // Tính tổng lợi nhuận và tổng số sản phẩm bán
+            let totalProfit = 0;
+            let totalQuantity = 0;
+    
+            orders.forEach(order => {
+                totalProfit += order.totalProfit;
+                totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+            });
+    
+            return res.status(200).json({ success: true, date, totalProfit, totalQuantity });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    }
+    
+    
 }
 
 const orderController = new OrderController();
@@ -249,5 +306,6 @@ module.exports = {
     getOrderById: orderController.getOrderById.bind(orderController),
     updateOrder: orderController.updateOrder.bind(orderController),
     deleteOrder: orderController.deleteOrder.bind(orderController),
-    searchOrdersByCustomerName: orderController.searchOrdersByCustomerName.bind(orderController)
+    searchOrdersByCustomerName: orderController.searchOrdersByCustomerName.bind(orderController),
+    getDailyProfitAndQuantity: orderController.getDailyProfitAndQuantity.bind(orderController)
 };
