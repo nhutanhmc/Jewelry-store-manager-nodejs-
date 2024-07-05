@@ -16,9 +16,9 @@ class CustomerController {
     async getAllCustomers(req, res) {
         try {
             const customers = await Customer.find().populate('orders'); // Populate danh sách đơn hàng
-            res.status(200).json(customers);
+            res.status(200).json({ success: true, customers });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -27,11 +27,11 @@ class CustomerController {
         try {
             const customer = await Customer.findById(req.params.id).populate('orders');
             if (!customer) {
-                return res.status(404).json({ message: 'Customer not found' });
+                return res.status(404).json({ success: false, message: 'Customer not found' });
             }
-            res.status(200).json(customer);
+            res.status(200).json({ success: true, customer });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -45,11 +45,11 @@ class CustomerController {
                 { new: true }
             );
             if (!customer) {
-                return res.status(404).json({ message: 'Customer not found' });
+                return res.status(404).json({ success: false, message: 'Customer not found' });
             }
-            res.status(200).json(customer);
+            res.status(200).json({ success: true, customer });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -58,11 +58,11 @@ class CustomerController {
         try {
             const customer = await Customer.findByIdAndDelete(req.params.id);
             if (!customer) {
-                return res.status(404).json({ message: 'Customer not found' });
+                return res.status(404).json({ success: false, message: 'Customer not found' });
             }
-            res.status(200).json({ message: 'Customer deleted' });
+            res.status(200).json({ success: true, message: 'Customer deleted' });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ success: false, error: err.message });
         }
     }
 
@@ -75,7 +75,7 @@ class CustomerController {
                 { new: true }
             );
             if (!customer) {
-                return res.status(404).json({ message: 'Customer not found' });
+                return res.status(404).json({ success: false, message: 'Customer not found' });
             }
             res.status(200).json({ success: true, message: 'Customer activated', customer });
         } catch (err) {
