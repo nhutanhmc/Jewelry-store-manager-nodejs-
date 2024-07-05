@@ -7,7 +7,7 @@ router.route("/")
   .all(authenticateToken)
   /**
    * @swagger
-   * /processingFees:
+   * /processingFee:
    *   get:
    *     summary: Get all processing fees
    *     tags: [ProcessingFees]
@@ -62,7 +62,7 @@ router.route("/:id")
   .all(authenticateToken)
   /**
    * @swagger
-   * /processingFees/{id}:
+   * /processingFee/{id}:
    *   get:
    *     summary: Get a processing fee by ID
    *     tags: [ProcessingFees]

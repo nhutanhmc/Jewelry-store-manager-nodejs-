@@ -268,5 +268,50 @@ router.route('/:orderId')
     .get(orderController.getOrderById)
     .put(orderController.updateOrder)
     .delete(orderController.deleteOrder);
+/**
+ * @swagger
+ * /orders/{orderId}/update-status:
+ *   put:
+ *     summary: Update order status by Admin
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: ['pending', 'paid', 'cancelled', 'not enough']
+ *     responses:
+ *       200:
+ *         description: Order status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:orderId/update-status', orderController.updateByAdmin);
+
 
 module.exports = router;
