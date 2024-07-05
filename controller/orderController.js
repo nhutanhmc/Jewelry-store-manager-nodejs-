@@ -50,15 +50,27 @@ class OrderController {
     // Lấy danh sách đơn hàng
     async getAllOrders(req, res) {
         try {
-            const { status } = req.query; // Lấy status từ query string
-
+            const { status, customerName } = req.query; // Lấy status và customerName từ query string
+    
             let query = Order.find();
-
+    
             // Nếu có status, thêm điều kiện lọc theo status
             if (status) {
                 query = query.where('status').equals(status);
             }
-
+    
+            // Nếu có customerName, tìm kiếm khách hàng dựa trên tên
+            if (customerName) {
+                const customers = await Customer.find({
+                    name: { $regex: new RegExp(customerName, 'i') } // Tìm kiếm không phân biệt hoa thường
+                });
+    
+                const customerIds = customers.map(customer => customer._id);
+    
+                // Thêm điều kiện lọc theo customerID
+                query = query.where('customerID').in(customerIds);
+            }
+    
             const orders = await query
                 .sort({ date: -1 }) // Sắp xếp các đơn hàng mới tạo gần nhất trước
                 .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
@@ -74,15 +86,16 @@ class OrderController {
                         }
                     }
                 });
-
+    
             const totalOrders = orders.length; // Tính tổng số lượng đơn hàng
-
+    
             return res.status(200).json({ success: true, totalOrders, orders });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+    
 
     // Lấy chi tiết đơn hàng
     async getOrderById(req, res) {
@@ -217,41 +230,7 @@ class OrderController {
         }
     }
 
-    // Tìm kiếm đơn hàng theo tên khách hàng
-    async searchOrdersByCustomerName(req, res) {
-        try {
-            const customerName = req.query.name; // Lấy tên khách hàng từ query string
 
-            // Tìm kiếm khách hàng dựa trên tên (không phân biệt hoa thường)
-            const customers = await Customer.find({
-                name: { $regex: new RegExp(customerName, 'i') } // Tìm kiếm không phân biệt hoa thường
-            });
-
-            // Lấy danh sách ID của các khách hàng tìm được
-            const customerIds = customers.map(customer => customer._id);
-
-            // Tìm các đơn hàng có customerID thuộc danh sách customerIds
-            const orders = await Order.find({ customerID: { $in: customerIds } })
-                .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
-                .populate({ path: 'storeID', select: '-orders' })    // Loại bỏ trường orders từ store
-                .populate('payments')
-                .populate({
-                    path: 'orderDetails',
-                    populate: {
-                        path: 'productID',
-                        populate: {
-                            path: 'imageIDs',
-                            select: 'imageLink'
-                        }
-                    }
-                });
-
-            return res.status(200).json({ success: true, orders });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, message: err.message });
-        }
-    }
 
     async getDailyProfitAndQuantity(req, res) {
         try {

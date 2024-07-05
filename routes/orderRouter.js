@@ -49,38 +49,6 @@ const { authenticateToken } = require('../config/authWithJWT'); // Giả sử b�
  */
 router.get('/daily-profit', orderController.getDailyProfitAndQuantity);
 
-/**
- * @swagger
- * /orders/search-by-customer:
- *   get:
- *     summary: Search orders by customer name
- *     tags: [Orders]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: query
- *         name: name
- *         schema:
- *           type: string
- *           description: The name of the customer to search for
- *     responses:
- *       200:
- *         description: List of orders by customer name
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 orders:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Order'
- *       500:
- *         description: Internal server error
- */
-router.get('/search-by-customer', orderController.searchOrdersByCustomerName);
 
 router.use(authenticateToken); // Sử dụng middleware xác thực cho tất cả các route
 
@@ -98,6 +66,11 @@ router.use(authenticateToken); // Sử dụng middleware xác thực cho tất c
  *         schema:
  *           type: string
  *           description: The status of the orders to filter by
+ *       - in: query
+ *         name: customerName
+ *         schema:
+ *           type: string
+ *           description: The name of the customer to search for
  *     responses:
  *       200:
  *         description: List of all orders
