@@ -198,7 +198,41 @@
  *       500:
  *         description: Server error
  */
-
+/**
+ * @swagger
+ * /customers/{id}/deactivate:
+ *   patch:
+ *     summary: Deactivate a customer by ID
+ *     tags: [Customers]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The customer ID
+ *     responses:
+ *       200:
+ *         description: The deactivated customer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: "Customer deactivated"
+ *                 customer:
+ *                   $ref: '#/components/schemas/Customer'
+ *       404:
+ *         description: Customer not found
+ *       500:
+ *         description: Server error
+ */
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controller/customerController');
@@ -217,5 +251,5 @@ router.route('/:id')
     .delete(customerController.deleteCustomer);
 
 router.patch('/:id/activate', customerController.activateCustomer);
-
+router.patch('/:id/deactivate', customerController.deactivateCustomer);
 module.exports = router;

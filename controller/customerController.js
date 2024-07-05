@@ -82,6 +82,23 @@ class CustomerController {
             res.status(500).json({ success: false, error: err.message });
         }
     }
+
+    // Hủy kích hoạt trạng thái khách hàng
+    async deactivateCustomer(req, res) {
+        try {
+            const customer = await Customer.findByIdAndUpdate(
+                req.params.id,
+                { status: false }, // Sửa thành boolean
+                { new: true }
+            );
+            if (!customer) {
+                return res.status(404).json({ success: false, message: 'Customer not found' });
+            }
+            res.status(200).json({ success: true, message: 'Customer deactivated', customer });
+        } catch (err) {
+            res.status(500).json({ success: false, error: err.message });
+        }
+    }
 }
 
 module.exports = new CustomerController();
