@@ -293,7 +293,7 @@ class ProductController {
     async updateProductImages_Api(req, res) {
         try {
             const { id } = req.params;
-
+    
             // Find product
             const product = await Product.findById(id).populate('imageIDs');
             if (!product) {
@@ -302,13 +302,13 @@ class ProductController {
                     message: "Product không tồn tại!"
                 });
             }
-
+    
             // Delete old images from Cloudinary and database
             for (const image of product.imageIDs) {
                 await cloudinary.uploader.destroy(image.imageLink.split('/').pop().split('.')[0]);
                 await Image.findByIdAndDelete(image._id);
             }
-
+    
             // Upload new images to Cloudinary and save references
             const imageLinks = [];
             for (const file of req.files) {
@@ -316,11 +316,11 @@ class ProductController {
                 const newImage = await Image.create({ productID: product._id, imageLink: result.secure_url });
                 imageLinks.push(newImage._id);
             }
-
+    
             // Update product with new image links
             product.imageIDs = imageLinks;
             await product.save();
-
+    
             return res.status(200).json({
                 success: true,
                 message: "Product images updated successfully",
@@ -334,6 +334,7 @@ class ProductController {
             });
         }
     }
+    
 
 }
 
