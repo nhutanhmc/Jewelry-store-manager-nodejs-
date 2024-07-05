@@ -92,6 +92,12 @@ router.use(authenticateToken); // Sử dụng middleware xác thực cho tất c
  *     tags: [Orders]
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           description: The status of the orders to filter by
  *     responses:
  *       200:
  *         description: List of all orders
@@ -102,6 +108,8 @@ router.use(authenticateToken); // Sử dụng middleware xác thực cho tất c
  *               properties:
  *                 success:
  *                   type: boolean
+ *                 totalOrders:
+ *                   type: number
  *                 orders:
  *                   type: array
  *                   items:
@@ -268,6 +276,7 @@ router.route('/:orderId')
     .get(orderController.getOrderById)
     .put(orderController.updateOrder)
     .delete(orderController.deleteOrder);
+
 /**
  * @swagger
  * /orders/{orderId}/update-status:
@@ -312,6 +321,5 @@ router.route('/:orderId')
  *         description: Internal server error
  */
 router.put('/:orderId/update-status', orderController.updateByAdmin);
-
 
 module.exports = router;

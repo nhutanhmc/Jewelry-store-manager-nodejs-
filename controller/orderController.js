@@ -50,7 +50,17 @@ class OrderController {
     // Lấy danh sách đơn hàng
     async getAllOrders(req, res) {
         try {
-            const orders = await Order.find()
+            const { status } = req.query; // Lấy status từ query string
+
+            let query = Order.find();
+
+            // Nếu có status, thêm điều kiện lọc theo status
+            if (status) {
+                query = query.where('status').equals(status);
+            }
+
+            const orders = await query
+                .sort({ date: -1 }) // Sắp xếp các đơn hàng mới tạo gần nhất trước
                 .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
                 .populate({ path: 'storeID', select: '-orders' })    // Loại bỏ trường orders từ store
                 .populate('payments')
@@ -65,7 +75,9 @@ class OrderController {
                     }
                 });
 
-            return res.status(200).json({ success: true, orders });
+            const totalOrders = orders.length; // Tính tổng số lượng đơn hàng
+
+            return res.status(200).json({ success: true, totalOrders, orders });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
@@ -340,5 +352,5 @@ module.exports = {
     deleteOrder: orderController.deleteOrder.bind(orderController),
     searchOrdersByCustomerName: orderController.searchOrdersByCustomerName.bind(orderController),
     getDailyProfitAndQuantity: orderController.getDailyProfitAndQuantity.bind(orderController),
-    updateByAdmin: orderController.updateByAdmin.bind(orderController) // Bind đúng cách
+    updateByAdmin: orderController.updateByAdmin.bind(orderController)
 };
