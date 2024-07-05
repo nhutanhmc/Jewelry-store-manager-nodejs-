@@ -10,7 +10,21 @@ const options = {
     },
     servers: [
       {
-        url: 'https://baitapdeploy-production.up.railway.app', 
+        url: 'https://baitapdeploy-production.up.railway.app',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        BearerAuth: [],
       },
     ],
   },

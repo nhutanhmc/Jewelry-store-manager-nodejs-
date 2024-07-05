@@ -1,27 +1,100 @@
 var express = require('express');
 const router = express.Router();
 var staffController = require('../controller/staffController');
-const passport = require("../config/passportConfig"); // Nhớ require passport
+const passport = require("../config/passportConfig");
 
-router.post('/refresh-token', staffController.refreshAccessToken);
-
-// Khởi tạo quá trình xác thực Google
-router.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-// Callback sau khi xác thực
-router.get('/auth/google/callback', 
-  passport.authenticate('google'), 
-  staffController.googleAuthCallback);
-
-  router.post('/auth/firebase', staffController.firebaseAuth);
-// staffsRouter.js
 /**
  * @swagger
  * tags:
  *   name: Staff
- *   description: API for managing staff
+ *   description: API endpoints for managing staff authentication and details
  */
+
+/**
+ * @swagger
+ * /staffsRouter/auth/google:
+ *   get:
+ *     summary: Google authentication
+ *     tags: [Staff]
+ *     description: Redirects to Google for authentication. The response is a redirect to Google OAuth.
+ *     responses:
+ *       302:
+ *         description: Redirects to Google for authentication
+ */
+router.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+/**
+ * @swagger
+ * /staffsRouter/auth/google/callback:
+ *   get:
+ *     summary: Google authentication callback
+ *     tags: [Staff]
+ *     description: Callback endpoint for Google OAuth. Redirects to the frontend with tokens.
+ *     parameters:
+ *       - in: query
+ *         name: accessToken
+ *         schema:
+ *           type: string
+ *         description: Access token
+ *       - in: query
+ *         name: refreshToken
+ *         schema:
+ *           type: string
+ *         description: Refresh token
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *         description: User role
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: User name
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with tokens
+ */
+router.get('/auth/google/callback', 
+  passport.authenticate('google'), 
+  staffController.googleAuthCallback);
+
+/**
+ * @swagger
+ * /staffsRouter/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Staff]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 accessToken:
+ *                   type: string
+ *       401:
+ *         description: Refresh token not provided
+ *       403:
+ *         description: Invalid refresh token
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/refresh-token', staffController.refreshAccessToken);
 
 /**
  * @swagger
@@ -43,17 +116,31 @@ router.get('/auth/google/callback',
  *     responses:
  *       200:
  *         description: Login successful
- *       400:
- *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
  */
 router.post('/loginWithJWT', staffController.loginWithJWT);
-
 
 /**
  * @swagger
  * /staffsRouter/signup:
  *   post:
- *     summary: Sign up a new staff
+ *     summary: Signup
  *     tags: [Staff]
  *     requestBody:
  *       required: true
@@ -74,9 +161,20 @@ router.post('/loginWithJWT', staffController.loginWithJWT);
  *                 type: string
  *     responses:
  *       201:
- *         description: Staff created successfully
- *       400:
- *         description: Bad request
+ *         description: Signup successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/Staff'
+ *       500:
+ *         description: Internal server error
  */
 router.post('/signup', staffController.signUp);
 
@@ -89,6 +187,17 @@ router.post('/signup', staffController.signUp);
  *     responses:
  *       200:
  *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Staff'
  *       500:
  *         description: Internal server error
  */

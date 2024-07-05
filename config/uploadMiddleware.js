@@ -6,6 +6,21 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: { files: 3 } 
+});
 
-module.exports = upload;
+// Middleware kiểm tra số lượng tệp
+function limitFileCount(req, res, next) {
+    if (req.files && req.files.length > 3) {
+        console.log('Too many files');
+        return res.status(413).json({
+            success: false,
+            message: 'You can upload up to 3 images only'
+        });
+    }
+    next();
+}
+
+module.exports = { upload, limitFileCount };

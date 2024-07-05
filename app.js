@@ -1,4 +1,3 @@
-// app.js
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
@@ -44,7 +43,6 @@ app.use(
     saveUninitialized: true,
   })
 );
-
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -96,7 +94,6 @@ app.use("/errorPage", (req, res) => {
   res.render("error/index");
 });
 
-
 app.use(function (req, res, next) {
   next(createError(404));
 });
@@ -105,9 +102,18 @@ app.use(function (err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
-  res.status(err.status || 500);
-  req.flash("error", err.message);
-  res.redirect("/errorPage");
+  // Kiểm tra nếu yêu cầu mong muốn JSON, trả về phản hồi JSON
+  if (req.accepts('json')) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message
+    });
+  } else {
+    // Ngược lại, trả về trang lỗi
+    res.status(err.status || 500);
+    req.flash("error", err.message);
+    res.redirect("/errorPage");
+  }
 });
 
 module.exports = app;
