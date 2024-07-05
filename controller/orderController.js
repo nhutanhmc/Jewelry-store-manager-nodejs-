@@ -329,7 +329,6 @@ module.exports = {
     getOrderById: orderController.getOrderById.bind(orderController),
     updateOrder: orderController.updateOrder.bind(orderController),
     deleteOrder: orderController.deleteOrder.bind(orderController),
-    searchOrdersByCustomerName: orderController.searchOrdersByCustomerName.bind(orderController),
     getDailyProfitAndQuantity: orderController.getDailyProfitAndQuantity.bind(orderController),
     updateByAdmin: orderController.updateByAdmin.bind(orderController)
 };
