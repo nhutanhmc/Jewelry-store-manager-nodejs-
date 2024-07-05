@@ -296,7 +296,39 @@ class OrderController {
         }
     }
     
-    
+    async updateByAdmin(req, res) {
+        try {
+            const { status } = req.body;
+            const orderId = req.params.orderId;
+
+            const order = await Order.findById(orderId);
+
+            if (!order) {
+                return res.status(404).json({ success: false, message: "Order not found" });
+            }
+
+            // Cập nhật trạng thái của đơn hàng
+            if (status) {
+                if (status === 'cancelled') {
+                    order.status = 'cancelled';
+                } else if (status === 'pending') {
+                    order.status = 'pending';
+                } else if (status === 'paid') {
+                    order.status = 'paid';
+                } else if (status === 'not enough') {
+                    order.status = 'not enough';
+                } else {
+                    return res.status(400).json({ success: false, message: "Invalid status value" });
+                }
+            }
+
+            await order.save();
+            return res.status(200).json({ success: true, message: "Order status updated", order });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    }
 }
 
 const orderController = new OrderController();
@@ -307,5 +339,6 @@ module.exports = {
     updateOrder: orderController.updateOrder.bind(orderController),
     deleteOrder: orderController.deleteOrder.bind(orderController),
     searchOrdersByCustomerName: orderController.searchOrdersByCustomerName.bind(orderController),
-    getDailyProfitAndQuantity: orderController.getDailyProfitAndQuantity.bind(orderController)
+    getDailyProfitAndQuantity: orderController.getDailyProfitAndQuantity.bind(orderController),
+    updateByAdmin: orderController.updateByAdmin.bind(orderController) // Bind đúng cách
 };
