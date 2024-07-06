@@ -19,7 +19,7 @@ const OrderSchema = new Schema({
     bankPaid: { type: Number, default: 0 },
     remainingAmount: { type: Number, default: 0 },
     excessAmount: { type: Number, default: 0 },
-    totalProfit: { type: Number, required: true, default: 0 } // Thêm trường totalProfit
+    totalProfit: { type: Number, required: true, default: 0 }
 });
 
 module.exports = mongoose.model("Order", OrderSchema);

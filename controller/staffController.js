@@ -2,7 +2,6 @@ const passport = require("passport");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Staff = require("../model/staffModel");
-const admin = require('../config/firebaseAdmin');
 
 class staffController {
   constructor() {
@@ -80,37 +79,7 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi" });
     }
   }
-  
-  async firebaseAuth(req, res) {
-    const idToken = req.body.idToken;
 
-    try {
-      // Xác minh ID token
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      const uid = decodedToken.uid;
-
-      // Tìm hoặc tạo người dùng trong cơ sở dữ liệu của bạn
-      let user = await Staff.findOne({ firebaseUid: uid });
-      if (!user) {
-        user = await Staff.create({
-          firebaseUid: uid,
-          name: decodedToken.name,
-          email: decodedToken.email,
-          role: 'staff'
-        });
-      }
-
-      // Tạo custom tokens
-      const payload = { userId: user._id, role: user.role };
-      const accessToken = jwt.sign(payload, "SE161473", { expiresIn: "15m" });
-      const refreshToken = jwt.sign(payload, "SE161473_REFRESH", { expiresIn: "7d" });
-
-      res.cookie('token', accessToken);
-      return res.json({ success: true, message: "Đăng nhập thành công!", accessToken, refreshToken, role: user.role });
-    } catch (error) {
-      return res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Firebase' });
-    }
-  }
 
 
  

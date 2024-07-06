@@ -3,10 +3,10 @@ const OrderDetail = require('../model/orderDetailModel');
 const Customer = require('../model/customerModel');
 const Store = require('../model/storeModel');
 const Product = require('../model/productModel');
-const Image = require('../model/imageModel');
+const admin = require('../config/firebaseAdmin');
 
 class OrderController {
-    // Tạo đơn hàng
+    // Tạo đơn hàng cho Frontend
     async createOrder(req, res) {
         try {
             const { customerID, storeID, description, payments, orderDetails = [] } = req.body;
@@ -29,16 +29,10 @@ class OrderController {
             await order.save();
 
             // Thêm order vào mảng orders của customer
-            await Customer.findByIdAndUpdate(
-                customerID,
-                { $push: { orders: order._id } }
-            );
+            await Customer.findByIdAndUpdate(customerID, { $push: { orders: order._id } });
 
             // Thêm order vào mảng orders của store
-            await Store.findByIdAndUpdate(
-                storeID,
-                { $push: { orders: order._id } }
-            );
+            await Store.findByIdAndUpdate(storeID, { $push: { orders: order._id } });
 
             return res.status(201).json({ success: true, message: "Order created", order });
         } catch (err) {
@@ -47,30 +41,87 @@ class OrderController {
         }
     }
 
+    // Tạo đơn hàng cho Mobile
+    async createOrderOnMobile(req, res) {
+        try {
+            const { customerID, storeID, description, payments, orderDetails = [], deviceToken } = req.body;
+
+            // Tạo đơn hàng mới
+            const order = await Order.create({ customerID, storeID, description, payments });
+
+            // Nếu có chi tiết đơn hàng, thêm vào đơn hàng và cập nhật đơn hàng
+            if (orderDetails.length > 0) {
+                for (const detail of orderDetails) {
+                    const newOrderDetail = await OrderDetail.create({ ...detail, orderID: order._id });
+                    order.orderDetails.push(newOrderDetail._id);
+                }
+                await order.save();
+            }
+
+            // Tính toán lại tổng lợi nhuận
+            const updatedOrderDetails = await OrderDetail.find({ orderID: order._id });
+            order.totalProfit = updatedOrderDetails.reduce((total, detail) => total + detail.totalProfit, 0);
+            await order.save();
+
+            // Thêm order vào mảng orders của customer
+            await Customer.findByIdAndUpdate(customerID, { $push: { orders: order._id } });
+
+            // Thêm order vào mảng orders của store
+            await Store.findByIdAndUpdate(storeID, { $push: { orders: order._id } });
+
+            // Gửi thông báo đến thiết bị di động
+            if (deviceToken) {
+                await this.sendNotification(deviceToken, 'New Order Created', `Order ${order._id} has been created successfully.`);
+            }
+
+            return res.status(201).json({ success: true, message: "Order created", order });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    }
+
+    // Hàm gửi thông báo
+    async sendNotification(token, title, body) {
+        const message = {
+            notification: {
+                title: title,
+                body: body,
+            },
+            token: token,
+        };
+
+        try {
+            const response = await admin.messaging().send(message);
+            console.log('Notification sent successfully:', response);
+        } catch (error) {
+            console.error('Error sending notification:', error);
+        }
+    }
     // Lấy danh sách đơn hàng
     async getAllOrders(req, res) {
         try {
             const { status, customerName } = req.query; // Lấy status và customerName từ query string
-    
+
             let query = Order.find();
-    
+
             // Nếu có status, thêm điều kiện lọc theo status
             if (status) {
                 query = query.where('status').equals(status);
             }
-    
+
             // Nếu có customerName, tìm kiếm khách hàng dựa trên tên
             if (customerName) {
                 const customers = await Customer.find({
                     name: { $regex: new RegExp(customerName, 'i') } // Tìm kiếm không phân biệt hoa thường
                 });
-    
+
                 const customerIds = customers.map(customer => customer._id);
-    
+
                 // Thêm điều kiện lọc theo customerID
                 query = query.where('customerID').in(customerIds);
             }
-    
+
             const orders = await query
                 .sort({ date: -1 }) // Sắp xếp các đơn hàng mới tạo gần nhất trước
                 .populate({ path: 'customerID', select: '-orders' }) // Loại bỏ trường orders từ customer
@@ -86,16 +137,15 @@ class OrderController {
                         }
                     }
                 });
-    
+
             const totalOrders = orders.length; // Tính tổng số lượng đơn hàng
-    
+
             return res.status(200).json({ success: true, totalOrders, orders });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
-    
 
     // Lấy chi tiết đơn hàng
     async getOrderById(req, res) {
@@ -230,8 +280,7 @@ class OrderController {
         }
     }
 
-
-
+    // Lấy lợi nhuận và số lượng đơn hàng hàng ngày
     async getDailyProfitAndQuantity(req, res) {
         try {
             const { date } = req.query; // Nhận ngày từ query string
@@ -325,6 +374,7 @@ class OrderController {
 const orderController = new OrderController();
 module.exports = {
     createOrder: orderController.createOrder.bind(orderController),
+    createOrderOnMobile: orderController.createOrderOnMobile.bind(orderController),
     getAllOrders: orderController.getAllOrders.bind(orderController),
     getOrderById: orderController.getOrderById.bind(orderController),
     updateOrder: orderController.updateOrder.bind(orderController),

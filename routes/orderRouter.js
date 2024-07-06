@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controller/orderController');
-const { authenticateToken } = require('../config/authWithJWT'); // Giả sử bạn đã có middleware xác thực
+const { authenticateToken } = require('../config/authWithJWT');
 
 /**
  * @swagger
@@ -48,7 +48,6 @@ const { authenticateToken } = require('../config/authWithJWT'); // Giả sử b�
  *         description: Internal server error
  */
 router.get('/daily-profit', orderController.getDailyProfitAndQuantity);
-
 
 router.use(authenticateToken); // Sử dụng middleware xác thực cho tất cả các route
 
@@ -145,6 +144,63 @@ router.route('/')
 
 /**
  * @swagger
+ * /orders/mobile:
+ *   post:
+ *     summary: Create a new order for Mobile
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerID:
+ *                 type: string
+ *               storeID:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               payments:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               orderDetails:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productID:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *                     totalProfit:
+ *                       type: number
+ *               deviceToken:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Order created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/mobile', orderController.createOrderOnMobile);
+
+/**
+ * @swagger
  * /orders/{orderId}:
  *   get:
  *     summary: Get an order by ID
@@ -187,7 +243,7 @@ router.route('/')
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         application/json
  *           schema:
  *             type: object
  *             properties:
@@ -203,7 +259,7 @@ router.route('/')
  *       200:
  *         description: Order updated successfully
  *         content:
- *           application/json:
+ *           application/json
  *             schema:
  *               type: object
  *               properties:
@@ -232,7 +288,7 @@ router.route('/')
  *       200:
  *         description: Order deleted successfully
  *         content:
- *           application/json:
+ *           application/json
  *             schema:
  *               type: object
  *               properties:
@@ -267,7 +323,7 @@ router.route('/:orderId')
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         application/json
  *           schema:
  *             type: object
  *             properties:
@@ -278,7 +334,7 @@ router.route('/:orderId')
  *       200:
  *         description: Order status updated successfully
  *         content:
- *           application/json:
+ *           application/json
  *             schema:
  *               type: object
  *               properties:
