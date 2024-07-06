@@ -243,7 +243,7 @@ router.post('/mobile', orderController.createOrderOnMobile);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -259,7 +259,7 @@ router.post('/mobile', orderController.createOrderOnMobile);
  *       200:
  *         description: Order updated successfully
  *         content:
- *           application/json
+ *           application/json:
  *             schema:
  *               type: object
  *               properties:
@@ -288,7 +288,7 @@ router.post('/mobile', orderController.createOrderOnMobile);
  *       200:
  *         description: Order deleted successfully
  *         content:
- *           application/json
+ *           application/json:
  *             schema:
  *               type: object
  *               properties:
@@ -323,7 +323,7 @@ router.route('/:orderId')
  *     requestBody:
  *       required: true
  *       content:
- *         application/json
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -334,7 +334,7 @@ router.route('/:orderId')
  *       200:
  *         description: Order status updated successfully
  *         content:
- *           application/json
+ *           application/json:
  *             schema:
  *               type: object
  *               properties:
