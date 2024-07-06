@@ -45,19 +45,18 @@ class staffController {
   async googleAuthCallback(req, res) {
     try {
       const user = req.user;
-      // Xoá access token cũ
       res.clearCookie("token");
       const { accessToken, refreshToken } = this.generateTokens(user);
-      const frontendURL = process.env.NODE_ENV === 'production'
-        ? 'http://localhost:3000/authGoogle'
-        : 'http://localhost:3000/authGoogle'; // URL của frontend
+      const frontendURL = 'http://localhost:3000'; // Đây là URL của frontend trong môi trường phát triển
 
-      // Chuyển hướng người dùng trở lại frontend với token qua query
-      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}`);
+      // Đảm bảo rằng URL chuyển hướng phù hợp với route xử lý trên frontend
+      res.redirect(`${frontendURL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}`);
     } catch (err) {
-      return res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Google' });
+      console.error("Google auth callback error:", err);
+      res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Google' });
     }
-  }
+}
+
 
   async refreshAccessToken(req, res) {
     try {
