@@ -203,4 +203,89 @@ router.post('/signup', staffController.signUp);
  */
 router.get('/getAllUser', staffController.getAllUsers);
 
+/**
+ * @swagger
+ * /staffsRouter/updateUser/{id}:
+ *   put:
+ *     summary: Update user
+ *     tags: [Staff]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to update
+ *       - in: body
+ *         name: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             username:
+ *               type: string
+ *             password:
+ *               type: string
+ *             name:
+ *               type: string
+ *             age:
+ *               type: number
+ *             role:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/Staff'
+ *       400:
+ *         description: Invalid request body
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/updateUser/:id', staffController.updateUser);
+/**
+ * @swagger
+ * /staffsRouter/deleteUser/{id}:
+ *   delete:
+ *     summary: Delete user
+ *     tags: [Staff]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to delete
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/Staff'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/deleteUser/:id', staffController.deleteUser);
+
 module.exports = router;

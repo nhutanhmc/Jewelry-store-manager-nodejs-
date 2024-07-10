@@ -124,6 +124,51 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
     }
   }
+  async updateUser(req, res, next) {
+    try {
+      const { id } = req.params; // Lấy id của user cần cập nhật từ URL params
+      const { username, password, name, age, role } = req.body; // Dữ liệu mới từ request body
+  
+      // Kiểm tra dữ liệu đầu vào
+      if (!username || !name || !role) {
+        return res.json({ success: false, message: "Vui lòng nhập đủ thông tin cập nhật!" });
+      }
+  
+      // Tìm và cập nhật user trong database
+      const updatedUser = await Staff.findByIdAndUpdate(id, {
+        username,
+        password: password ? await bcrypt.hash(password, 10) : undefined, // Hash lại password nếu có thay đổi
+        name,
+        age,
+        role
+      }, { new: true }); // Trả về user đã được cập nhật
+  
+      if (!updatedUser) {
+        return res.json({ success: false, message: "Không tìm thấy user để cập nhật!" });
+      }
+  
+      return res.json({ success: true, message: "Cập nhật thành công!", user: updatedUser });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật user!" });
+    }
+  }
+  async deleteUser(req, res, next) {
+    try {
+      const { id } = req.params; // Lấy id của user cần xoá từ URL params
+  
+      // Xoá user từ database
+      const deletedUser = await Staff.findByIdAndDelete(id);
+  
+      if (!deletedUser) {
+        return res.json({ success: false, message: "Không tìm thấy user để xoá!" });
+      }
+  
+      return res.json({ success: true, message: "Xoá user thành công!", user: deletedUser });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message || "Lỗi xoá user!" });
+    }
+  }
+    
   
 }
 

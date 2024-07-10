@@ -19,7 +19,7 @@ passport.use(
           user = await Staff.create({
             googleId: profile.id,
             name: profile.displayName,
-            role: 'staff',
+            role: 'cust',
           });
         }
         done(null, user);
