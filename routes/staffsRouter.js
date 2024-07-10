@@ -205,6 +205,38 @@ router.get('/getAllUser', staffController.getAllUsers);
 
 /**
  * @swagger
+ * /staffsRouter/getUserById/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Staff]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to get
+ *     responses:
+ *       200:
+ *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 user:
+ *                   $ref: '#/components/schemas/Staff'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/getUserById/:id', staffController.getUserById);
+
+/**
+ * @swagger
  * /staffsRouter/updateUser/{id}:
  *   put:
  *     summary: Update user
@@ -254,6 +286,7 @@ router.get('/getAllUser', staffController.getAllUsers);
  *         description: Internal server error
  */
 router.put('/updateUser/:id', staffController.updateUser);
+
 /**
  * @swagger
  * /staffsRouter/deleteUser/{id}:

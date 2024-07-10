@@ -9,6 +9,7 @@ class staffController {
     this.loginWithJWT = this.loginWithJWT.bind(this);
     this.googleAuthCallback = this.googleAuthCallback.bind(this);
     this.refreshAccessToken = this.refreshAccessToken.bind(this);
+    this.getUserById = this.getUserById.bind(this); // Thêm hàm này
   }
 
   generateTokens(user) {
@@ -80,10 +81,6 @@ class staffController {
     }
   }
 
-
-
- 
-
   async signUp(req, res, next) {
     try {
       let { username, password, name, age, role } = req.body;
@@ -91,7 +88,6 @@ class staffController {
       if (!username || !password || !name || !role) {
         return res.json({ success: false, message: "Vui lòng nhập đủ thông tin đăng ký!" });
       }
-
     
       const existingUser = await Staff.findOne({ username });
       if (existingUser) {
@@ -107,15 +103,12 @@ class staffController {
         role
       });
 
-  
       return res.status(201).json({ success: true, message: "Đăng ký thành công!", user: newUser });
     } catch (err) {
-
       return res.status(500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
     }
   }
 
- 
   async getAllUsers(req, res, next) {
     try {
       const users = await Staff.find({});
@@ -124,6 +117,20 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
     }
   }
+
+  async getUserById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = await Staff.findById(id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User không tồn tại!" });
+      }
+      return res.status(200).json({ success: true, user });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message || "Lỗi chưa xác định!" });
+    }
+  }
+
   async updateUser(req, res, next) {
     try {
       const { id } = req.params; // Lấy id của user cần cập nhật từ URL params
@@ -152,6 +159,7 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật user!" });
     }
   }
+
   async deleteUser(req, res, next) {
     try {
       const { id } = req.params; // Lấy id của user cần xoá từ URL params
@@ -168,8 +176,6 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi xoá user!" });
     }
   }
-    
-  
 }
 
 module.exports = new staffController();
