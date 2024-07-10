@@ -9,10 +9,16 @@
  * @swagger
  * /customers:
  *   get:
- *     summary: Retrieve a list of customers
+ *     summary: Retrieve a list of customers, optionally filtered by phone number
  *     tags: [Customers]
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: phone
+ *         schema:
+ *           type: string
+ *         description: Phone number to filter customers
  *     responses:
  *       200:
  *         description: A list of customers
@@ -233,6 +239,7 @@
  *       500:
  *         description: Server error
  */
+
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controller/customerController');
@@ -252,4 +259,5 @@ router.route('/:id')
 
 router.patch('/:id/activate', customerController.activateCustomer);
 router.patch('/:id/deactivate', customerController.deactivateCustomer);
+
 module.exports = router;

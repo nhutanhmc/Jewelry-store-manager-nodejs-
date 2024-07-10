@@ -5,7 +5,15 @@ class CustomerController {
     async createCustomer(req, res) {
         try {
             const { name, age, phone, address } = req.body;
-            const customer = await Customer.create({ name, age, phone, address, status: false }); // Sửa thành boolean
+            
+            // Kiểm tra xem số điện thoại đã tồn tại trong DB chưa
+            const existingCustomer = await Customer.findOne({ phone });
+            if (existingCustomer) {
+                return res.status(400).json({ success: false, message: 'Số điện thoại đã được đăng ký', customer: existingCustomer });
+            }
+
+            // Nếu số điện thoại chưa tồn tại, tạo mới khách hàng
+            const customer = await Customer.create({ name, age, phone, address, status: false });
             res.status(201).json({ success: true, customer });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
@@ -15,7 +23,15 @@ class CustomerController {
     // Lấy danh sách khách hàng
     async getAllCustomers(req, res) {
         try {
-            const customers = await Customer.find().populate('orders'); // Populate danh sách đơn hàng
+            const { phone } = req.query;
+            let customers;
+
+            if (phone) {
+                customers = await Customer.find({ phone }).populate('orders');
+            } else {
+                customers = await Customer.find().populate('orders');
+            }
+
             res.status(200).json({ success: true, customers });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
