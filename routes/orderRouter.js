@@ -14,7 +14,7 @@ const { authenticateToken } = require('../config/authWithJWT');
  * @swagger
  * /orders/daily-profit:
  *   get:
- *     summary: Get daily profit and quantity of orders
+ *     summary: Get profit and quantity of orders
  *     tags: [Orders]
  *     security:
  *       - BearerAuth: []
@@ -22,12 +22,26 @@ const { authenticateToken } = require('../config/authWithJWT');
  *       - in: query
  *         name: date
  *         schema:
+ *           type: integer
+ *           description: The day of the month to get profit and quantity for (1-31)
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           description: The month to get profit and quantity for (1-12)
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *           description: The year to get profit and quantity for
+ *       - in: query
+ *         name: storeID
+ *         schema:
  *           type: string
- *           format: date
- *           description: The date to get profit and quantity for
+ *           description: The ID of the store to filter orders by
  *     responses:
  *       200:
- *         description: Daily profit and quantity
+ *         description: Profit and quantity of orders
  *         content:
  *           application/json:
  *             schema:
@@ -35,18 +49,25 @@ const { authenticateToken } = require('../config/authWithJWT');
  *               properties:
  *                 success:
  *                   type: boolean
- *                 date:
- *                   type: string
- *                   format: date
  *                 totalProfit:
  *                   type: number
  *                 totalQuantity:
  *                   type: number
+ *                 paid:
+ *                   type: integer
+ *                 pending:
+ *                   type: integer
+ *                 cancelled:
+ *                   type: integer
+ *                 notEnough:
+ *                   type: integer
  *       400:
- *         description: Invalid date format
+ *         description: Invalid parameters
  *       500:
  *         description: Internal server error
  */
+
+
 router.get('/daily-profit', orderController.getDailyProfitAndQuantity);
 
 router.use(authenticateToken); // Sử dụng middleware xác thực cho tất cả các route

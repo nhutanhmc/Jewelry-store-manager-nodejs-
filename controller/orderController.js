@@ -280,62 +280,97 @@ class OrderController {
         }
     }
 
-    // Lấy lợi nhuận và số lượng đơn hàng hàng ngày
     async getDailyProfitAndQuantity(req, res) {
         try {
-            const { date } = req.query; // Nhận ngày từ query string
+            const { date, month, year, storeID } = req.query; // Nhận date, month, year và storeID từ query string
     
-            // Kiểm tra nếu date không hợp lệ
-            if (!date) {
-                return res.status(400).json({ success: false, message: 'Date is required' });
+            if (!date && !month && !year) {
+                return res.status(400).json({ success: false, message: 'At least one of date, month, or year is required' });
             }
     
-            // Chuyển đổi ngày thành định dạng đầu ngày và cuối ngày
-            const startDate = new Date(date);
-            const endDate = new Date(date);
+            let startDate, endDate;
     
-            if (isNaN(startDate.getTime())) {
-                return res.status(400).json({ success: false, message: 'Invalid date format' });
+            if (date && month && year) {
+                // Tìm kiếm theo ngày cụ thể
+                startDate = new Date(year, month - 1, date);
+                endDate = new Date(year, month - 1, date);
+                startDate.setUTCHours(0, 0, 0, 0);
+                endDate.setUTCHours(23, 59, 59, 999);
+            } else if (month && year) {
+                // Tìm kiếm theo tháng cụ thể
+                startDate = new Date(year, month - 1, 1);
+                endDate = new Date(year, month, 0);
+                startDate.setUTCHours(0, 0, 0, 0);
+                endDate.setUTCHours(23, 59, 59, 999);
+            } else if (year) {
+                // Tìm kiếm theo năm cụ thể
+                startDate = new Date(year, 0, 1);
+                endDate = new Date(year, 11, 31);
+                startDate.setUTCHours(0, 0, 0, 0);
+                endDate.setUTCHours(23, 59, 59, 999);
+            } else {
+                return res.status(400).json({ success: false, message: 'Invalid parameters' });
             }
-    
-            startDate.setUTCHours(0, 0, 0, 0);
-            endDate.setUTCHours(23, 59, 59, 999);
     
             console.log("Start Date:", startDate.toISOString());
             console.log("End Date:", endDate.toISOString());
     
-            // Tìm tất cả các đơn hàng trong khoảng thời gian của ngày đó và có trạng thái là 'paid'
-            const orders = await Order.find({
+            // Tạo điều kiện tìm kiếm
+            let query = {
                 date: {
                     $gte: startDate,
                     $lte: endDate
-                },
-                status: 'paid'
-            }).populate('orderDetails');
+                }
+            };
+    
+            // Thêm điều kiện lọc theo storeID nếu có
+            if (storeID) {
+                query.storeID = storeID;
+            }
+    
+            // Tìm tất cả các đơn hàng trong khoảng thời gian đã xác định
+            const orders = await Order.find(query).populate('orderDetails');
     
             console.log("Orders found:", orders);
     
             // Kiểm tra nếu không có đơn hàng nào
             if (orders.length === 0) {
-                return res.status(200).json({ success: true, date, totalProfit: 0, totalQuantity: 0 });
+                return res.status(200).json({ success: true, totalProfit: 0, totalQuantity: 0, paid: 0, pending: 0, cancelled: 0, notEnough: 0 });
             }
     
             // Tính tổng lợi nhuận và tổng số sản phẩm bán
             let totalProfit = 0;
             let totalQuantity = 0;
+            let statusCount = {
+                paid: 0,
+                pending: 0,
+                cancelled: 0,
+                notEnough: 0
+            };
     
             orders.forEach(order => {
+                console.log("Order details:", order); // In ra chi tiết đơn hàng để kiểm tra
                 totalProfit += order.totalProfit;
                 totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+    
+                // Đếm số lượng đơn hàng theo trạng thái
+                if (order.status === 'not enough') {
+                    statusCount.notEnough += 1;
+                } else if (statusCount.hasOwnProperty(order.status)) {
+                    statusCount[order.status] += 1;
+                }
             });
     
-            return res.status(200).json({ success: true, date, totalProfit, totalQuantity });
+            return res.status(200).json({ success: true, totalProfit, totalQuantity, ...statusCount });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
     
+    
+
+
     async updateByAdmin(req, res) {
         try {
             const { status } = req.body;
