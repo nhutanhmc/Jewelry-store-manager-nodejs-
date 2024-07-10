@@ -9,7 +9,7 @@ class CustomerController {
             // Kiểm tra xem số điện thoại đã tồn tại trong DB chưa
             const existingCustomer = await Customer.findOne({ phone });
             if (existingCustomer) {
-                return res.status(400).json({ success: false, message: 'Số điện thoại đã được đăng ký', customer: existingCustomer });
+                return res.status(400).json({ success: true, message: 'Số điện thoại đã được đăng ký', customer: existingCustomer });
             }
 
             // Nếu số điện thoại chưa tồn tại, tạo mới khách hàng
