@@ -4,7 +4,14 @@ class StoreController {
     // Tạo cửa hàng mới
     async createStore(req, res) {
         try {
-            const { name, phone, location } = req.body; // Bỏ trường currentQuantity
+            const { name, phone, location } = req.body;
+
+            // Kiểm tra xem tên cửa hàng đã tồn tại hay chưa
+            const existingStore = await Store.findOne({ name });
+            if (existingStore) {
+                return res.status(400).json({ success: false, message: 'Tên cửa hàng đã tồn tại' });
+            }
+
             const store = await Store.create({ name, phone, location });
             res.status(201).json({ success: true, store });
         } catch (err) {
@@ -15,7 +22,7 @@ class StoreController {
     // Lấy danh sách cửa hàng
     async getAllStores(req, res) {
         try {
-            const stores = await Store.find().populate('orders'); 
+            const stores = await Store.find().populate('orders');
             res.status(200).json({ success: true, stores });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
@@ -38,7 +45,7 @@ class StoreController {
     // Cập nhật thông tin cửa hàng
     async updateStore(req, res) {
         try {
-            const { name, phone, location } = req.body; // Bỏ trường currentQuantity
+            const { name, phone, location } = req.body;
             const store = await Store.findByIdAndUpdate(
                 req.params.id,
                 { name, phone, location },

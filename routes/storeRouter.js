@@ -61,6 +61,8 @@ router.use(authenticateToken);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Store'
+ *       400:
+ *         description: Tên cửa hàng đã tồn tại
  *       500:
  *         description: Internal server error
  */

@@ -136,29 +136,47 @@ class staffController {
       const { id } = req.params; // Lấy id của user cần cập nhật từ URL params
       const { username, password, name, age, role } = req.body; // Dữ liệu mới từ request body
   
+      // Thêm log để kiểm tra các giá trị đầu vào
+      console.log("Received data:", { id, username, password, name, age, role });
+  
       // Kiểm tra dữ liệu đầu vào
       if (!username || !name || !role) {
+        console.log("Missing required fields");
         return res.json({ success: false, message: "Vui lòng nhập đủ thông tin cập nhật!" });
       }
   
-      // Tìm và cập nhật user trong database
-      const updatedUser = await Staff.findByIdAndUpdate(id, {
+      // Tạo đối tượng cập nhật
+      const updateData = {
         username,
-        password: password ? await bcrypt.hash(password, 10) : undefined, // Hash lại password nếu có thay đổi
         name,
         age,
         role
-      }, { new: true }); // Trả về user đã được cập nhật
+      };
+  
+      // Hash lại password nếu có thay đổi
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+  
+      // Thêm log để kiểm tra đối tượng cập nhật
+      console.log("Update data:", updateData);
+  
+      // Tìm và cập nhật user trong database
+      const updatedUser = await Staff.findByIdAndUpdate(id, updateData, { new: true }); // Trả về user đã được cập nhật
   
       if (!updatedUser) {
+        console.log("User not found");
         return res.json({ success: false, message: "Không tìm thấy user để cập nhật!" });
       }
   
+      console.log("Update successful:", updatedUser);
       return res.json({ success: true, message: "Cập nhật thành công!", user: updatedUser });
     } catch (err) {
+      console.error("Error updating user:", err);
       return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật user!" });
     }
   }
+  
 
   async deleteUser(req, res, next) {
     try {
