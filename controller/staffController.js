@@ -9,7 +9,8 @@ class staffController {
     this.loginWithJWT = this.loginWithJWT.bind(this);
     this.googleAuthCallback = this.googleAuthCallback.bind(this);
     this.refreshAccessToken = this.refreshAccessToken.bind(this);
-    this.getUserById = this.getUserById.bind(this); // Thêm hàm này
+    this.getUserById = this.getUserById.bind(this);
+    this.updateUserRole = this.updateUserRole.bind(this); // Thêm hàm này
   }
 
   generateTokens(user) {
@@ -192,6 +193,28 @@ class staffController {
       return res.json({ success: true, message: "Xoá user thành công!", user: deletedUser });
     } catch (err) {
       return res.status(500).json({ success: false, message: err.message || "Lỗi xoá user!" });
+    }
+  }
+  async updateUserRole(req, res, next) {
+    try {
+      const { id } = req.params; // Lấy id của user cần cập nhật từ URL params
+      const { role } = req.body; // Lấy role mới từ request body
+  
+      // Kiểm tra dữ liệu đầu vào
+      if (!role) {
+        return res.json({ success: false, message: "Vui lòng cung cấp role mới!" });
+      }
+  
+      // Tìm và cập nhật role của user trong database
+      const updatedUser = await Staff.findByIdAndUpdate(id, { role }, { new: true }); // Trả về user đã được cập nhật
+  
+      if (!updatedUser) {
+        return res.json({ success: false, message: "Không tìm thấy user để cập nhật role!" });
+      }
+  
+      return res.json({ success: true, message: "Cập nhật role thành công!", user: updatedUser });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật role!" });
     }
   }
 }

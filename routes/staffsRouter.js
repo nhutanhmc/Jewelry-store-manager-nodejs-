@@ -321,4 +321,49 @@ router.put('/updateUser/:id', staffController.updateUser);
  */
 router.delete('/deleteUser/:id', staffController.deleteUser);
 
+/**
+ * @swagger
+ * /staffsRouter/updateUserRole/{id}:
+ *   put:
+ *     summary: Update user role
+ *     tags: [Staff]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to update role
+ *       - in: body
+ *         name: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             role:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: User role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/Staff'
+ *       400:
+ *         description: Invalid request body
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/updateUserRole/:id', staffController.updateUserRole);
+
 module.exports = router;
+
