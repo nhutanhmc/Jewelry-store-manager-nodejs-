@@ -1,4 +1,4 @@
-var express = require("express");
+const express = require("express");
 const processingFeeController = require("../controller/processingFeeController");
 const { authenticateToken } = require("../config/authWithJWT");
 var router = express.Router();
@@ -52,6 +52,8 @@ router.route("/")
    *           application/json:
    *             schema:
    *               $ref: '#/components/schemas/ProcessingFee'
+   *       400:
+   *         description: Tên phí gia công đã tồn tại
    *       500:
    *         description: Internal server error
    */
