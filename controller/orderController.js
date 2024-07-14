@@ -285,7 +285,44 @@ class OrderController {
             const { date, month, year, storeID } = req.query; // Nhận date, month, year và storeID từ query string
     
             if (!date && !month && !year) {
-                return res.status(400).json({ success: false, message: 'At least one of date, month, or year is required' });
+                // Không nhập gì hết, tính tổng tất cả
+                const totalCustomers = await Customer.countDocuments();
+                const newCustomers = await Customer.countDocuments();
+                const orders = await Order.find().populate('orderDetails');
+    
+                let totalProfit = 0;
+                let totalQuantity = 0;
+                let statusCount = {
+                    paid: 0,
+                    pending: 0,
+                    cancelled: 0,
+                    notEnough: 0
+                };
+    
+                orders.forEach(order => {
+                    if (order.status === 'paid') {
+                        totalProfit += order.totalProfit;
+                        totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+                    }
+                    if (statusCount.hasOwnProperty(order.status)) {
+                        statusCount[order.status] += 1;
+                    }
+                });
+    
+                return res.status(200).json({ success: true, totalProfit, totalQuantity, totalCustomers, newCustomers, ...statusCount });
+            }
+    
+            if (date && !month && !year) {
+                return res.status(400).json({ success: false, message: 'Cần nhập thêm tháng và năm' });
+            }
+            if (date && month && !year) {
+                return res.status(400).json({ success: false, message: 'Cần nhập thêm năm' });
+            }
+            if (date && !month && year) {
+                return res.status(400).json({ success: false, message: 'Cần nhập thêm tháng' });
+            }
+            if (month && !year) {
+                return res.status(400).json({ success: false, message: 'Cần nhập thêm năm' });
             }
     
             let startDate, endDate;
@@ -320,8 +357,7 @@ class OrderController {
                 date: {
                     $gte: startDate,
                     $lte: endDate
-                },
-                status: 'paid' // Thêm điều kiện lọc theo status 'paid'
+                }
             };
     
             // Thêm điều kiện lọc theo storeID nếu có
@@ -334,6 +370,22 @@ class OrderController {
     
             console.log("Orders found:", orders);
     
+            // Kiểm tra nếu không có đơn hàng nào
+            if (orders.length === 0) {
+                // Đếm tổng số khách hàng
+                const totalCustomers = await Customer.countDocuments();
+    
+                // Đếm số khách hàng mới tạo trong khoảng thời gian đã xác định
+                const newCustomers = await Customer.find({
+                    createdAt: {
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                }).countDocuments();
+    
+                return res.status(200).json({ success: true, totalProfit: 0, totalQuantity: 0, totalCustomers, newCustomers, paid: 0, pending: 0, cancelled: 0, notEnough: 0 });
+            }
+    
             // Tính tổng lợi nhuận và tổng số sản phẩm bán
             let totalProfit = 0;
             let totalQuantity = 0;
@@ -345,37 +397,29 @@ class OrderController {
             };
     
             orders.forEach(order => {
-                console.log("Order details:", order); // In ra chi tiết đơn hàng để kiểm tra
-                totalProfit += order.totalProfit;
-                totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+                if (order.status === 'paid') {
+                    totalProfit += order.totalProfit;
+                    totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+                }
     
                 // Đếm số lượng đơn hàng theo trạng thái
-                if (order.status === 'not enough') {
-                    statusCount.notEnough += 1;
-                } else if (statusCount.hasOwnProperty(order.status)) {
+                if (statusCount.hasOwnProperty(order.status)) {
                     statusCount[order.status] += 1;
                 }
             });
     
-            // Đếm tổng số lượng khách hàng hiện tại
+            // Đếm tổng số khách hàng
             const totalCustomers = await Customer.countDocuments();
     
-            // Đếm tổng số lượng khách hàng được tạo trong khoảng thời gian đã xác định
-            const newCustomers = await Customer.countDocuments({
+            // Đếm số khách hàng mới tạo trong khoảng thời gian đã xác định
+            const newCustomers = await Customer.find({
                 createdAt: {
                     $gte: startDate,
                     $lte: endDate
                 }
-            });
+            }).countDocuments();
     
-            return res.status(200).json({
-                success: true,
-                totalProfit,
-                totalQuantity,
-                totalCustomers,
-                newCustomers,
-                ...statusCount
-            });
+            return res.status(200).json({ success: true, totalProfit, totalQuantity, totalCustomers, newCustomers, ...statusCount });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
