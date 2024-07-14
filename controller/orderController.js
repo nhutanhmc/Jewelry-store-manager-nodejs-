@@ -320,7 +320,8 @@ class OrderController {
                 date: {
                     $gte: startDate,
                     $lte: endDate
-                }
+                },
+                status: 'paid' // Thêm điều kiện lọc theo status 'paid'
             };
     
             // Thêm điều kiện lọc theo storeID nếu có
@@ -332,11 +333,6 @@ class OrderController {
             const orders = await Order.find(query).populate('orderDetails');
     
             console.log("Orders found:", orders);
-    
-            // Kiểm tra nếu không có đơn hàng nào
-            if (orders.length === 0) {
-                return res.status(200).json({ success: true, totalProfit: 0, totalQuantity: 0, paid: 0, pending: 0, cancelled: 0, notEnough: 0 });
-            }
     
             // Tính tổng lợi nhuận và tổng số sản phẩm bán
             let totalProfit = 0;
@@ -361,12 +357,31 @@ class OrderController {
                 }
             });
     
-            return res.status(200).json({ success: true, totalProfit, totalQuantity, ...statusCount });
+            // Đếm tổng số lượng khách hàng hiện tại
+            const totalCustomers = await Customer.countDocuments();
+    
+            // Đếm tổng số lượng khách hàng được tạo trong khoảng thời gian đã xác định
+            const newCustomers = await Customer.countDocuments({
+                createdAt: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            });
+    
+            return res.status(200).json({
+                success: true,
+                totalProfit,
+                totalQuantity,
+                totalCustomers,
+                newCustomers,
+                ...statusCount
+            });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+    
     
     
 

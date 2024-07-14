@@ -8,7 +8,7 @@ const CustomerSchema = new Schema({
     address: { type: String, required: true  },
     status: { type: Boolean, default: false }, // Sửa thành boolean
     orders: [{ type: Schema.Types.ObjectId, ref: 'Order' }]
-});
+}, { timestamps: true }); // Thêm timestamps
 
 const Customer = mongoose.model('Customer', CustomerSchema);
 
