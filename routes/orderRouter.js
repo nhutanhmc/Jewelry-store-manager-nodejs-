@@ -61,13 +61,19 @@ const { authenticateToken } = require('../config/authWithJWT');
  *                   type: integer
  *                 notEnough:
  *                   type: integer
+ *                 monthlyProfitDifference:
+ *                   type: number
+ *                 monthlyProfitPercentageChange:
+ *                   type: number
+ *                 yearlyProfitDifference:
+ *                   type: number
+ *                 yearlyProfitPercentageChange:
+ *                   type: number
  *       400:
  *         description: Invalid parameters
  *       500:
  *         description: Internal server error
  */
-
-
 router.get('/daily-profit', orderController.getDailyProfitAndQuantity);
 
 router.use(authenticateToken); // Sử dụng middleware xác thực cho tất cả các route

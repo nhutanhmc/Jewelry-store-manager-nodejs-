@@ -282,50 +282,12 @@ class OrderController {
 
     async getDailyProfitAndQuantity(req, res) {
         try {
-            const { date, month, year, storeID } = req.query; // Nhận date, month, year và storeID từ query string
+            const { date, month, year, storeID } = req.query;
     
-            if (!date && !month && !year) {
-                // Không nhập gì hết, tính tổng tất cả
-                const totalCustomers = await Customer.countDocuments();
-                const newCustomers = await Customer.countDocuments();
-                const orders = await Order.find().populate('orderDetails');
-    
-                let totalProfit = 0;
-                let totalQuantity = 0;
-                let statusCount = {
-                    paid: 0,
-                    pending: 0,
-                    cancelled: 0,
-                    notEnough: 0
-                };
-    
-                orders.forEach(order => {
-                    if (order.status === 'paid') {
-                        totalProfit += order.totalProfit;
-                        totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
-                    }
-                    if (statusCount.hasOwnProperty(order.status)) {
-                        statusCount[order.status] += 1;
-                    }
-                });
-    
-                return res.status(200).json({ success: true, totalProfit, totalQuantity, totalCustomers, newCustomers, ...statusCount });
-            }
-    
-            if (date && !month && !year) {
-                return res.status(400).json({ success: false, message: 'Cần nhập thêm tháng và năm' });
-            }
-            if (date && month && !year) {
-                return res.status(400).json({ success: false, message: 'Cần nhập thêm năm' });
-            }
-            if (date && !month && year) {
-                return res.status(400).json({ success: false, message: 'Cần nhập thêm tháng' });
-            }
-            if (month && !year) {
-                return res.status(400).json({ success: false, message: 'Cần nhập thêm năm' });
-            }
-    
+            // Khởi tạo các biến thời gian
             let startDate, endDate;
+            let monthlyStartDate, monthlyEndDate, yearlyStartDate, yearlyEndDate;
+            let lastMonthStartDate, lastMonthEndDate, lastYearStartDate, lastYearEndDate;
     
             if (date && month && year) {
                 // Tìm kiếm theo ngày cụ thể
@@ -333,26 +295,66 @@ class OrderController {
                 endDate = new Date(year, month - 1, date);
                 startDate.setUTCHours(0, 0, 0, 0);
                 endDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo tháng của ngày đã nhập
+                monthlyStartDate = new Date(year, month - 1, 1);
+                monthlyEndDate = new Date(year, month, 0);
+                monthlyStartDate.setUTCHours(0, 0, 0, 0);
+                monthlyEndDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo năm của ngày đã nhập
+                yearlyStartDate = new Date(year, 0, 1);
+                yearlyEndDate = new Date(year, 11, 31);
+                yearlyStartDate.setUTCHours(0, 0, 0, 0);
+                yearlyEndDate.setUTCHours(23, 59, 59, 999);
+    
             } else if (month && year) {
                 // Tìm kiếm theo tháng cụ thể
                 startDate = new Date(year, month - 1, 1);
                 endDate = new Date(year, month, 0);
                 startDate.setUTCHours(0, 0, 0, 0);
                 endDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo tháng của tháng trước
+                if (month == 1) {
+                    lastMonthStartDate = new Date(year - 1, 11, 1);
+                    lastMonthEndDate = new Date(year - 1, 11, 31);
+                } else {
+                    lastMonthStartDate = new Date(year, month - 2, 1);
+                    lastMonthEndDate = new Date(year, month - 1, 0);
+                }
+                lastMonthStartDate.setUTCHours(0, 0, 0, 0);
+                lastMonthEndDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo năm của tháng đã nhập
+                yearlyStartDate = new Date(year, 0, 1);
+                yearlyEndDate = new Date(year, 11, 31);
+                yearlyStartDate.setUTCHours(0, 0, 0, 0);
+                yearlyEndDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo năm của năm trước
+                lastYearStartDate = new Date(year - 1, 0, 1);
+                lastYearEndDate = new Date(year - 1, 11, 31);
+                lastYearStartDate.setUTCHours(0, 0, 0, 0);
+                lastYearEndDate.setUTCHours(23, 59, 59, 999);
+    
             } else if (year) {
                 // Tìm kiếm theo năm cụ thể
                 startDate = new Date(year, 0, 1);
                 endDate = new Date(year, 11, 31);
                 startDate.setUTCHours(0, 0, 0, 0);
                 endDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo năm của năm trước
+                lastYearStartDate = new Date(year - 1, 0, 1);
+                lastYearEndDate = new Date(year - 1, 11, 31);
+                lastYearStartDate.setUTCHours(0, 0, 0, 0);
+                lastYearEndDate.setUTCHours(23, 59, 59, 999);
             } else {
                 return res.status(400).json({ success: false, message: 'Invalid parameters' });
             }
     
-            console.log("Start Date:", startDate.toISOString());
-            console.log("End Date:", endDate.toISOString());
-    
-            // Tạo điều kiện tìm kiếm
+            // Tạo điều kiện tìm kiếm cho ngày/tháng/năm hiện tại
             let query = {
                 date: {
                     $gte: startDate,
@@ -368,25 +370,7 @@ class OrderController {
             // Tìm tất cả các đơn hàng trong khoảng thời gian đã xác định
             const orders = await Order.find(query).populate('orderDetails');
     
-            console.log("Orders found:", orders);
-    
-            // Kiểm tra nếu không có đơn hàng nào
-            if (orders.length === 0) {
-                // Đếm tổng số khách hàng
-                const totalCustomers = await Customer.countDocuments();
-    
-                // Đếm số khách hàng mới tạo trong khoảng thời gian đã xác định
-                const newCustomers = await Customer.find({
-                    createdAt: {
-                        $gte: startDate,
-                        $lte: endDate
-                    }
-                }).countDocuments();
-    
-                return res.status(200).json({ success: true, totalProfit: 0, totalQuantity: 0, totalCustomers, newCustomers, paid: 0, pending: 0, cancelled: 0, notEnough: 0 });
-            }
-    
-            // Tính tổng lợi nhuận và tổng số sản phẩm bán
+            // Tính tổng lợi nhuận và tổng số sản phẩm bán cho ngày/tháng/năm hiện tại
             let totalProfit = 0;
             let totalQuantity = 0;
             let statusCount = {
@@ -419,12 +403,131 @@ class OrderController {
                 }
             }).countDocuments();
     
-            return res.status(200).json({ success: true, totalProfit, totalQuantity, totalCustomers, newCustomers, ...statusCount });
+            // Tính lợi nhuận tháng hiện tại
+            let monthlyProfit = 0;
+            monthlyStartDate = new Date(year, month - 1, 1);
+            monthlyEndDate = new Date(year, month, 0);
+            monthlyStartDate.setUTCHours(0, 0, 0, 0);
+            monthlyEndDate.setUTCHours(23, 59, 59, 999);
+            if (monthlyStartDate && monthlyEndDate) {
+                const monthlyOrders = await Order.find({
+                    date: {
+                        $gte: monthlyStartDate,
+                        $lte: monthlyEndDate
+                    }
+                }).populate('orderDetails');
+    
+                monthlyOrders.forEach(order => {
+                    if (order.status === 'paid') {
+                        monthlyProfit += order.totalProfit;
+                    }
+                });
+    
+                console.log(`Lợi nhuận tháng hiện tại (${monthlyStartDate.toISOString()} - ${monthlyEndDate.toISOString()}):`, monthlyProfit);
+            }
+    
+            // Tính lợi nhuận tháng trước (nếu có)
+            let lastMonthProfit = 0;
+            if (month == 1) {
+                lastMonthStartDate = new Date(year - 1, 11, 1);
+                lastMonthEndDate = new Date(year - 1, 11, 31);
+            } else {
+                lastMonthStartDate = new Date(year, month - 2, 1);
+                lastMonthEndDate = new Date(year, month - 1, 0);
+            }
+            lastMonthStartDate.setUTCHours(0, 0, 0, 0);
+            lastMonthEndDate.setUTCHours(23, 59, 59, 999);
+            if (lastMonthStartDate && lastMonthEndDate) {
+                const lastMonthOrders = await Order.find({
+                    date: {
+                        $gte: lastMonthStartDate,
+                        $lte: lastMonthEndDate
+                    }
+                }).populate('orderDetails');
+    
+                lastMonthOrders.forEach(order => {
+                    if (order.status === 'paid') {
+                        lastMonthProfit += order.totalProfit;
+                    }
+                });
+    
+                console.log(`Lợi nhuận tháng trước (${lastMonthStartDate.toISOString()} - ${lastMonthEndDate.toISOString()}):`, lastMonthProfit);
+            }
+    
+            // Tính lợi nhuận năm hiện tại
+            let yearlyProfit = 0;
+            yearlyStartDate = new Date(year, 0, 1);
+            yearlyEndDate = new Date(year, 11, 31);
+            yearlyStartDate.setUTCHours(0, 0, 0, 0);
+            yearlyEndDate.setUTCHours(23, 59, 59, 999);
+            if (yearlyStartDate && yearlyEndDate) {
+                const yearlyOrders = await Order.find({
+                    date: {
+                        $gte: yearlyStartDate,
+                        $lte: yearlyEndDate
+                    }
+                }).populate('orderDetails');
+    
+                yearlyOrders.forEach(order => {
+                    if (order.status === 'paid') {
+                        yearlyProfit += order.totalProfit;
+                    }
+                });
+    
+                console.log(`Lợi nhuận năm hiện tại (${yearlyStartDate.toISOString()} - ${yearlyEndDate.toISOString()}):`, yearlyProfit);
+            }
+    
+            // Tính lợi nhuận năm trước (nếu có)
+            let lastYearProfit = 0;
+            lastYearStartDate = new Date(year - 1, 0, 1);
+            lastYearEndDate = new Date(year - 1, 11, 31);
+            lastYearStartDate.setUTCHours(0, 0, 0, 0);
+            lastYearEndDate.setUTCHours(23, 59, 59, 999);
+            if (lastYearStartDate && lastYearEndDate) {
+                const lastYearOrders = await Order.find({
+                    date: {
+                        $gte: lastYearStartDate,
+                        $lte: lastYearEndDate
+                    }
+                }).populate('orderDetails');
+    
+                lastYearOrders.forEach(order => {
+                    if (order.status === 'paid') {
+                        lastYearProfit += order.totalProfit;
+                    }
+                });
+    
+                console.log(`Lợi nhuận năm trước (${lastYearStartDate.toISOString()} - ${lastYearEndDate.toISOString()}):`, lastYearProfit);
+            }
+    
+            // Tính toán lợi nhuận và phần trăm thay đổi cho tháng và năm
+            const monthlyProfitDifference = monthlyProfit - lastMonthProfit;
+            const monthlyProfitPercentageChange = lastMonthProfit ? (monthlyProfitDifference / lastMonthProfit) * 100 : 0;
+            const yearlyProfitDifference = yearlyProfit - lastYearProfit;
+            const yearlyProfitPercentageChange = lastYearProfit ? (yearlyProfitDifference / lastYearProfit) * 100 : 0;
+    
+            console.log(`Tổng thu nhập tháng hiện tại: ${monthlyProfit}`);
+            console.log(`Tổng thu nhập tháng trước: ${lastMonthProfit}`);
+    
+            return res.status(200).json({
+                success: true,
+                totalProfit,
+                totalQuantity,
+                totalCustomers,
+                newCustomers,
+                monthlyProfitDifference,
+                monthlyProfitPercentageChange,
+                yearlyProfitDifference,
+                yearlyProfitPercentageChange,
+                ...statusCount
+            });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ success: false, message: err.message });
         }
     }
+    
+    
     
     
     
