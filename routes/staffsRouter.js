@@ -1,6 +1,6 @@
-var express = require('express');
+const express = require('express');
 const router = express.Router();
-var staffController = require('../controller/staffController');
+const staffController = require('../controller/staffController');
 const passport = require("../config/passportConfig");
 
 /**
@@ -52,6 +52,11 @@ router.get('/auth/google',
  *         schema:
  *           type: string
  *         description: User name
+ *       - in: query
+ *         name: id
+ *         schema:
+ *           type: string
+ *         description: User ID
  *     responses:
  *       302:
  *         description: Redirects to frontend with tokens
@@ -130,6 +135,8 @@ router.post('/refresh-token', staffController.refreshAccessToken);
  *                 refreshToken:
  *                   type: string
  *                 role:
+ *                   type: string
+ *                 id:
  *                   type: string
  *       500:
  *         description: Internal server error
@@ -365,5 +372,5 @@ router.delete('/deleteUser/:id', staffController.deleteUser);
  */
 router.put('/updateUserRole/:id', staffController.updateUserRole);
 
-module.exports = router;
 
+module.exports = router;
