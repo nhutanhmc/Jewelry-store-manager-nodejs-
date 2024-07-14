@@ -38,7 +38,7 @@ class staffController {
       res.clearCookie("token");
       const { accessToken, refreshToken } = this.generateTokens(user);
       res.cookie("token", accessToken);
-      return res.json({ success: true, message: "Đăng nhập thành công!", accessToken, refreshToken, role: user.role });
+      return res.json({ success: true, message: "Đăng nhập thành công!", accessToken, refreshToken, role: user.role, id: user._id });
     } catch (err) {
       return res.json({ success: false, message: err.message || "Lỗi" });
     }
@@ -55,7 +55,7 @@ class staffController {
         : 'http://localhost:3000/authGoogle'; // URL của frontend
 
       // Chuyển hướng người dùng trở lại frontend với token qua query
-      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}`);
+      res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}&id=${user._id}`);
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Lỗi xử lý xác thực Google' });
     }
@@ -177,7 +177,6 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật user!" });
     }
   }
-  
 
   async deleteUser(req, res, next) {
     try {
@@ -195,6 +194,7 @@ class staffController {
       return res.status(500).json({ success: false, message: err.message || "Lỗi xoá user!" });
     }
   }
+  
   async updateUserRole(req, res, next) {
     try {
       const { id } = req.params; // Lấy id của user cần cập nhật từ URL params
@@ -214,7 +214,7 @@ class staffController {
   
       return res.json({ success: true, message: "Cập nhật role thành công!", user: updatedUser });
     } catch (err) {
-      return res.status(500).json({ success: false, message: err.message || "Lỗi cập nhật role!" });
+      return res.status (500).json({ success: false, message: err.message || "Lỗi cập nhật role!" });
     }
   }
 }
