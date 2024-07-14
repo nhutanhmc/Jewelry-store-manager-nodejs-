@@ -289,6 +289,43 @@ class OrderController {
             let monthlyStartDate, monthlyEndDate, yearlyStartDate, yearlyEndDate;
             let lastMonthStartDate, lastMonthEndDate, lastYearStartDate, lastYearEndDate;
     
+            if (!date && !month && !year) {
+                // Không nhập gì hết, tính tổng tất cả
+                const orders = await Order.find(storeID ? { storeID } : {}).populate('orderDetails');
+    
+                let totalProfit = 0;
+                let totalQuantity = 0;
+                let statusCount = {
+                    paid: 0,
+                    pending: 0,
+                    cancelled: 0,
+                    notEnough: 0
+                };
+    
+                orders.forEach(order => {
+                    if (order.status === 'paid') {
+                        totalProfit += order.totalProfit;
+                        totalQuantity += order.orderDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+                    }
+    
+                    if (statusCount.hasOwnProperty(order.status)) {
+                        statusCount[order.status] += 1;
+                    }
+                });
+    
+                const totalCustomers = await Customer.countDocuments();
+                const newCustomers = await Customer.countDocuments({ createdAt: { $gte: new Date(new Date().getFullYear(), 0, 1) } });
+    
+                return res.status(200).json({
+                    success: true,
+                    totalProfit,
+                    totalQuantity,
+                    totalCustomers,
+                    newCustomers,
+                    ...statusCount
+                });
+            }
+    
             if (date && month && year) {
                 // Tìm kiếm theo ngày cụ thể
                 startDate = new Date(year, month - 1, date);
@@ -302,11 +339,28 @@ class OrderController {
                 monthlyStartDate.setUTCHours(0, 0, 0, 0);
                 monthlyEndDate.setUTCHours(23, 59, 59, 999);
     
+                // Tìm kiếm theo tháng của tháng trước
+                if (month == 1) {
+                    lastMonthStartDate = new Date(year - 1, 11, 1);
+                    lastMonthEndDate = new Date(year - 1, 11, 31);
+                } else {
+                    lastMonthStartDate = new Date(year, month - 2, 1);
+                    lastMonthEndDate = new Date(year, month - 1, 0);
+                }
+                lastMonthStartDate.setUTCHours(0, 0, 0, 0);
+                lastMonthEndDate.setUTCHours(23, 59, 59, 999);
+    
                 // Tìm kiếm theo năm của ngày đã nhập
                 yearlyStartDate = new Date(year, 0, 1);
                 yearlyEndDate = new Date(year, 11, 31);
                 yearlyStartDate.setUTCHours(0, 0, 0, 0);
                 yearlyEndDate.setUTCHours(23, 59, 59, 999);
+    
+                // Tìm kiếm theo năm của năm trước
+                lastYearStartDate = new Date(year - 1, 0, 1);
+                lastYearEndDate = new Date(year - 1, 11, 31);
+                lastYearStartDate.setUTCHours(0, 0, 0, 0);
+                lastYearEndDate.setUTCHours(23, 59, 59, 999);
     
             } else if (month && year) {
                 // Tìm kiếm theo tháng cụ thể
@@ -405,38 +459,31 @@ class OrderController {
     
             // Tính lợi nhuận tháng hiện tại
             let monthlyProfit = 0;
-            monthlyStartDate = new Date(year, month - 1, 1);
-            monthlyEndDate = new Date(year, month, 0);
-            monthlyStartDate.setUTCHours(0, 0, 0, 0);
-            monthlyEndDate.setUTCHours(23, 59, 59, 999);
-            if (monthlyStartDate && monthlyEndDate) {
-                const monthlyOrders = await Order.find({
-                    date: {
-                        $gte: monthlyStartDate,
-                        $lte: monthlyEndDate
-                    }
-                }).populate('orderDetails');
+            if (month && year) {
+                monthlyStartDate = new Date(year, month - 1, 1);
+                monthlyEndDate = new Date(year, month, 0);
+                monthlyStartDate.setUTCHours(0, 0, 0, 0);
+                monthlyEndDate.setUTCHours(23, 59, 59, 999);
+                if (monthlyStartDate && monthlyEndDate) {
+                    const monthlyOrders = await Order.find({
+                        date: {
+                            $gte: monthlyStartDate,
+                            $lte: monthlyEndDate
+                        }
+                    }).populate('orderDetails');
     
-                monthlyOrders.forEach(order => {
-                    if (order.status === 'paid') {
-                        monthlyProfit += order.totalProfit;
-                    }
-                });
+                    monthlyOrders.forEach(order => {
+                        if (order.status === 'paid') {
+                            monthlyProfit += order.totalProfit;
+                        }
+                    });
     
-                console.log(`Lợi nhuận tháng hiện tại (${monthlyStartDate.toISOString()} - ${monthlyEndDate.toISOString()}):`, monthlyProfit);
+                    console.log(`Lợi nhuận tháng hiện tại (${monthlyStartDate.toISOString()} - ${monthlyEndDate.toISOString()}):`, monthlyProfit);
+                }
             }
     
             // Tính lợi nhuận tháng trước (nếu có)
             let lastMonthProfit = 0;
-            if (month == 1) {
-                lastMonthStartDate = new Date(year - 1, 11, 1);
-                lastMonthEndDate = new Date(year - 1, 11, 31);
-            } else {
-                lastMonthStartDate = new Date(year, month - 2, 1);
-                lastMonthEndDate = new Date(year, month - 1, 0);
-            }
-            lastMonthStartDate.setUTCHours(0, 0, 0, 0);
-            lastMonthEndDate.setUTCHours(23, 59, 59, 999);
             if (lastMonthStartDate && lastMonthEndDate) {
                 const lastMonthOrders = await Order.find({
                     date: {
@@ -508,10 +555,11 @@ class OrderController {
     
             console.log(`Tổng thu nhập tháng hiện tại: ${monthlyProfit}`);
             console.log(`Tổng thu nhập tháng trước: ${lastMonthProfit}`);
+            console.log(`monthlyProfitDifference: ${monthlyProfit} - ${lastMonthProfit} = ${monthlyProfitDifference}`);
     
             return res.status(200).json({
                 success: true,
-                totalProfit,
+                totalProfit: date ? totalProfit : (month ? monthlyProfit : yearlyProfit), // Cập nhật giá trị `totalProfit` dựa trên khoảng thời gian
                 totalQuantity,
                 totalCustomers,
                 newCustomers,
@@ -526,10 +574,6 @@ class OrderController {
             return res.status(500).json({ success: false, message: err.message });
         }
     }
-    
-    
-    
-    
     
 
 
