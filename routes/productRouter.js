@@ -218,12 +218,34 @@ router.delete('/:id', ProductController.deleteProduct_Api);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Product ID to update
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Product'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               size:
+ *                 type: string
+ *               weight:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               color:
+ *                 type: string
+ *               materialID:
+ *                 type: string
+ *               gemstoneID:
+ *                 type: string
+ *               productTypeID:
+ *                 type: string
+ *               quantity:
+ *                 type: number
+ *               materialWeight:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Product updated successfully
@@ -238,6 +260,8 @@ router.delete('/:id', ProductController.deleteProduct_Api);
  *                   type: string
  *                 product:
  *                   $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Bad request (e.g., invalid ID)
  *       404:
  *         description: Product not found
  *       500:

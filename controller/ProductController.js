@@ -182,36 +182,44 @@ class ProductController {
     async updateProduct_Api(req, res) {
         try {
             const { name, size, weight, description, color, materialID, gemstoneID, productTypeID, quantity, materialWeight } = req.body;
-    
-            const material = await Material.findById(materialID);
-            if (materialID && !material) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Material không tồn tại!"
-                });
+            
+            // Validate material ID if provided
+            if (materialID) {
+                const material = await Material.findById(materialID);
+                if (!material) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Material không tồn tại!"
+                    });
+                }
             }
-
-            const gemstone = await Gemstone.findById(gemstoneID);
-            if (gemstoneID && !gemstone) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Gemstone không tồn tại!"
-                });
+            
+            // Validate gemstone ID if provided
+            if (gemstoneID) {
+                const gemstone = await Gemstone.findById(gemstoneID);
+                if (!gemstone) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Gemstone không tồn tại!"
+                    });
+                }
             }
-
+            
+            // Validate product type ID if provided
             if (productTypeID && !await ProductType.findById(productTypeID)) {
                 return res.status(400).json({
                     success: false,
                     message: "ProductType không tồn tại!"
                 });
             }
-
-            // Tính toán giá gốc của sản phẩm
+            
+            // Calculate base price, final price, and profit
+            const material = materialID ? await Material.findById(materialID) : await Material.findById(req.body.materialID);
+            const gemstone = gemstoneID ? await Gemstone.findById(gemstoneID) : await Gemstone.findById(req.body.gemstoneID);
             const materialFee = await ProcessingFee.findById(material.processingFeeId);
             const gemstoneFee = await ProcessingFee.findById(gemstone.processingFeeId);
             const basePrice = (gemstone.priceOfGem * (1 + gemstoneFee.feeRate)) + ((material.pricePerGram * materialWeight) * (1 + materialFee.feeRate));
-
-            // Tính toán giá cuối cùng và tiền lời
+            
             let price;
             let profit;
             if (basePrice < 5000000) {
@@ -222,7 +230,8 @@ class ProductController {
                 price = basePrice * 1.45;
             }
             profit = price - basePrice;
-
+            
+            // Update product
             const updatedProduct = await Product.findByIdAndUpdate(
                 req.params.id,
                 {
@@ -235,14 +244,14 @@ class ProductController {
                     path: 'categoryID'
                 }
             });
-    
+            
             if (!updatedProduct) {
                 return res.status(404).json({
                     success: false,
                     message: "Product không tồn tại!"
                 });
             }
-    
+            
             return res.status(200).json({
                 success: true,
                 message: "Product updated successfully",
