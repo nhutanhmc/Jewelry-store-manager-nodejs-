@@ -52,7 +52,7 @@ class staffController {
       const { accessToken, refreshToken } = this.generateTokens(user);
       const frontendURL = process.env.NODE_ENV === 'production'
         ? 'http://localhost:3000/authGoogle'
-        : 'http://localhost:3000/authGoogle'; // URL của frontend
+        : 'https://aluminastore.netlify.app/authGoogle'; // URL của frontend
 
       // Chuyển hướng người dùng trở lại frontend với token qua query
       res.redirect(`${frontendURL}?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&name=${user.name}&id=${user._id}`);
