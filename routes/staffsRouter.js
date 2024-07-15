@@ -255,22 +255,23 @@ router.get('/getUserById/:id', staffController.getUserById);
  *         schema:
  *           type: string
  *         description: User ID to update
- *       - in: body
- *         name: body
- *         required: true
- *         schema:
- *           type: object
- *           properties:
- *             username:
- *               type: string
- *             password:
- *               type: string
- *             name:
- *               type: string
- *             age:
- *               type: number
- *             role:
- *               type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               age:
+ *                 type: number
+ *               role:
+ *                 type: string
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -341,14 +342,15 @@ router.delete('/deleteUser/:id', staffController.deleteUser);
  *         schema:
  *           type: string
  *         description: User ID to update role
- *       - in: body
- *         name: body
- *         required: true
- *         schema:
- *           type: object
- *           properties:
- *             role:
- *               type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
  *     responses:
  *       200:
  *         description: User role updated successfully
@@ -371,6 +373,5 @@ router.delete('/deleteUser/:id', staffController.deleteUser);
  *         description: Internal server error
  */
 router.put('/updateUserRole/:id', staffController.updateUserRole);
-
 
 module.exports = router;
